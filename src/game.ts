@@ -19,11 +19,14 @@ module game {
   export let animationEndedTimeout: ng.IPromise<any> = null;
   export let state: IState = null;
   export const boardSize = gameLogic.ROWS;
-
+  export const gameSpeed = 1000;
+  export let action: any = null;
+  export let snakeOneMove: Direction = null;
+  export let snakeTwoMove: Direction = null;
+  export let snakeThreeMove: Direction = null;
+  
+  
   export function init() {
-    // registerServiceWorker();
-    // translate.setTranslations(getTranslations());
-    // translate.setLanguage('en');
     resizeGameAreaService.setWidthToHeight(1);
     moveService.setGame({
       minNumberOfPlayers: 2,
@@ -31,25 +34,7 @@ module game {
       updateUI: updateUI,
       gotMessageFromPlatform: null,
     });
-  }
-
-  function registerServiceWorker() {
-    // I prefer to use appCache over serviceWorker
-    // (because iOS doesn't support serviceWorker, so we have to use appCache)
-    // I've added this code for a future where all browsers support serviceWorker (so we can deprecate appCache!)
-    if (!window.applicationCache && 'serviceWorker' in navigator) {
-      let n: any = navigator;
-      log.log('Calling serviceWorker.register');
-      n.serviceWorker.register('service-worker.js').then(function(registration: any) {
-        log.log('ServiceWorker registration successful with scope: ',    registration.scope);
-      }).catch(function(err: any) {
-        log.log('ServiceWorker registration failed: ', err);
-      });
-    }
-  }
-
-  function getTranslations(): Translations {
-    return {};
+    action = $interval(move, 500);
   }
 
   export function updateUI(params: IUpdateUI): void {
@@ -122,8 +107,7 @@ module game {
       currentUpdateUI.yourPlayerIndex === currentUpdateUI.move.turnIndexAfterMove; // it's my turn
   }
 
-  export function cellClicked(row: number, col: number): void {
-    log.info("Clicked on cell:", row, col);
+  export function move(): void {
     if (!isHumanTurn()) return;
     if (window.location.search === '?throwException') { // to test encoding a stack trace with sourcemap
       throw new Error("Throwing the error because URL has '?throwException'");
@@ -131,19 +115,17 @@ module game {
     let nextMove: IMove = null;
     try {
       nextMove = gameLogic.createMove(
-          state, [null, null], 100000, currentUpdateUI.move.turnIndexAfterMove);
+          state, [angular.copy(snakeOneMove), angular.copy(snakeTwoMove)], 100000, currentUpdateUI.move.turnIndexAfterMove);
+      snakeOneMove = null;
+      snakeTwoMove = null;
+      snakeThreeMove = null;
     } catch (e) {
-      log.info(["Cell is already full in position:", row, col]);
+      $interval.cancel(action);
+      log.info("Game ended");
       return;
     }
     // Move is legal, make it!
     makeMove(nextMove);
-  }
-
-  export function shouldShowImage(row: number, col: number): boolean {
-    // let cell = state.board[row][col];
-    // return cell !== "";
-    return true;
   }
 
   export function isFood(row: number, col: number): boolean {
@@ -176,6 +158,102 @@ module game {
       res.push(i);
     }
     return res;
+  }
+
+  export function keyDown(keyCode: any): void {
+    // up arrow
+    if (keyCode == 38) {
+      if (snakeOneMove == null) {
+        snakeOneMove = {shiftX: -1, shiftY: 0};
+      }
+    }
+    // down arrow
+    if (keyCode == 40) {
+      if (snakeOneMove == null) {
+        snakeOneMove = {shiftX: 1, shiftY: 0};
+      }
+    }
+    // left arrow
+    if (keyCode == 37) {
+      if (snakeOneMove == null) {
+        snakeOneMove = {shiftX: 0, shiftY: -1};
+      }
+    }
+    // right arrow
+    if (keyCode == 39) {
+      if (snakeOneMove == null) {
+        snakeOneMove = {shiftX: 0, shiftY: 1};
+      }
+    }
+    // w
+    if (keyCode == 87) {
+      if (snakeTwoMove == null) {
+        snakeTwoMove = {shiftX: -1, shiftY: 0};
+      }
+    }
+    // s
+    if (keyCode == 83) {
+      if (snakeTwoMove == null) {
+        snakeTwoMove = {shiftX: 1, shiftY: 0};
+      }
+    }
+    // a
+    if (keyCode == 65) {
+      if (snakeTwoMove == null) {
+        snakeTwoMove = {shiftX: 0, shiftY: -1};
+      }
+    }
+    // d
+    if (keyCode == 68) {
+      if (snakeTwoMove == null) {
+        snakeTwoMove = {shiftX: 0, shiftY: 1};
+      }
+    }
+    // y
+    if (keyCode == 89) {
+      if (snakeThreeMove == null) {
+        snakeThreeMove = {shiftX: -1, shiftY: 0};
+      }
+    }
+    // h
+    if (keyCode == 72) {
+      if (snakeThreeMove == null) {
+        snakeThreeMove = {shiftX: 1, shiftY: 0};
+      }
+    }
+    // g
+    if (keyCode == 71) {
+      if (snakeThreeMove == null) {
+        snakeThreeMove = {shiftX: 0, shiftY: -1};
+      }
+    }
+    // j
+    if (keyCode == 74) {
+      if (snakeThreeMove == null) {
+        snakeThreeMove = {shiftX: 0, shiftY: 1};
+      }
+    }
+    if (snakeOneMove != null) {
+      let oldDirection = currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes[0].currentDirection;
+      if ((oldDirection.shiftX) == (snakeOneMove.shiftX) &&
+        (oldDirection.shiftY) == (snakeOneMove.shiftY)) {
+        snakeOneMove = null;
+      }
+    }
+    if (snakeTwoMove != null) {
+      let oldDirection = currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes[1].currentDirection;
+      if ((oldDirection.shiftX) == (snakeTwoMove.shiftX) &&
+          (oldDirection.shiftY) == (snakeTwoMove.shiftY)) {
+        snakeTwoMove = null;
+      }
+    }
+    if (snakeThreeMove != null && currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes.length == 3) {
+      let oldDirection = currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes[2].currentDirection;
+      if ((oldDirection.shiftX) == (snakeThreeMove.shiftX) &&
+          (oldDirection.shiftY) == (snakeThreeMove.shiftY)) {
+        snakeThreeMove = null;
+      }
+    }
   }
 }
 

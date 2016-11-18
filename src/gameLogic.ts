@@ -184,15 +184,22 @@ module gameLogic {
         let head = boardWithSnakesAfterMove.snakes[index].headToTail[0];
         let newHeadX: number;
         let newHeadY: number;
-
-        if (newDirections[index] == null) {
+        let oldDirection = boardWithSnakesAfterMove.snakes[index].currentDirection;
+        if (newDirections[index] != null)
+          log.info("ddd", oldDirection.shiftX, oldDirection.shiftY, newDirections[index].shiftX, newDirections[index].shiftY)
+        if (newDirections[index] == null ||
+            (Math.abs(oldDirection.shiftX) == Math.abs(newDirections[index].shiftX) &&
+              Math.abs(oldDirection.shiftY) == Math.abs(newDirections[index].shiftY))) {
           // keep moving in the same direction
           newHeadX = head.row + boardWithSnakesAfterMove.snakes[index].currentDirection.shiftX;
           newHeadY = head.col + boardWithSnakesAfterMove.snakes[index].currentDirection.shiftY;
         } else {
           // keep moving in the new direction
+
           newHeadX = head.row + newDirections[index].shiftX;
           newHeadY = head.col + newDirections[index].shiftY;
+
+          boardWithSnakesAfterMove.snakes[index].currentDirection = newDirections[index];
         }
 
         // eat food
