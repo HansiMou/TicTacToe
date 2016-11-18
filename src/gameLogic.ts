@@ -29,7 +29,7 @@ module gameLogic {
   export const COLS = 30;
   export const NumberOfBarrier = 5;
   export const NumberOfPlayer = 2;
-  export const NumberOfFood = 3;
+  export const NumberOfFood = 30;
   export const RemainingTime = 180*1000;
 
   function getInitialBoardAndSnakes(): BoardWithSnakes {
@@ -168,7 +168,7 @@ module gameLogic {
     if (getWinner(boardWithSnakes) !== '' || isTie(boardWithSnakes, leftTime)) {
       throw new Error("Can only make a move if the game is not over!");
     }
-    let boardWithSnakesAfterMove = angular.copy(boardWithSnakes);
+    let boardWithSnakesAfterMove = {board: angular.copy(boardWithSnakes.board), snakes: angular.copy(boardWithSnakes.snakes)};
 
     // Game over, time out.
     if (leftTime <= 0) {
