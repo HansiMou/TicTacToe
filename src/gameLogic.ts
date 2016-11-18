@@ -1,19 +1,47 @@
 type Board = string[][];
-interface BoardDelta {
+
+interface BoardWithSnakes {
+  board: string[][];
+  snakes: Snake[];
+}
+interface Direction {
+  shiftX: number;
+  shiftY: number;
+}
+interface Snake {
+  headToTail: Cell[];
+  currentDirection: Direction;
+  dead: boolean;
+  oldTail: Cell;
+}
+interface Cell {
   row: number;
   col: number;
 }
 interface IState {
-  board: Board;
-  delta: BoardDelta;
+  boardWithSnakes: BoardWithSnakes;
+  newDirections: Direction[];
 }
 
 module gameLogic {
-  export const ROWS = 3;
-  export const COLS = 3;
+  import all = webdriver.promise.all;
+  export const ROWS = 30;
+  export const COLS = 30;
+  export const NumberOfBarrier = 5;
+  export const NumberOfPlayer = 2;
+  export const NumberOfFood = 3;
+  export const RemainingTime = 180*1000;
 
-  /** Returns the initial TicTacToe board, which is a ROWSxCOLS matrix containing ''. */
-  function getInitialBoard(): Board {
+  function getInitialBoardAndSnakes(): BoardWithSnakes {
+    let board: Board = getInitialBoardWithBarriersAndFoods();
+    let snakes: Snake[] = [];
+    for (let i = 0; i < NumberOfPlayer; i++) {
+      snakes[i] = getInitialSnake(board, i+1);
+    }
+    return {board: board, snakes: snakes};
+  }
+
+  function getInitialBoardWithBarriersAndFoods(): Board {
     let board: Board = [];
     for (let i = 0; i < ROWS; i++) {
       board[i] = [];
@@ -21,70 +49,109 @@ module gameLogic {
         board[i][j] = '';
       }
     }
-    return board;
-  }
-
-  export function getInitialState(): IState {
-    return {board: getInitialBoard(), delta: null};
-  }
-
-  /**
-   * Returns true if the game ended in a tie because there are no empty cells.
-   * E.g., isTie returns true for the following board:
-   *     [['X', 'O', 'X'],
-   *      ['X', 'O', 'O'],
-   *      ['O', 'X', 'X']]
-   */
-  function isTie(board: Board): boolean {
-    for (let i = 0; i < ROWS; i++) {
-      for (let j = 0; j < COLS; j++) {
-        if (board[i][j] === '') {
-          // If there is an empty cell then we do not have a tie.
-          return false;
+    let curBarriers: number = 0;
+    let curFoods: number = 0;
+    while (curBarriers < NumberOfBarrier || curFoods < NumberOfFood) {
+      let randomX: number = Math.floor((Math.random()*ROWS));
+      let randomY: number = Math.floor((Math.random()*COLS));
+      if (board[randomX][randomY] == '') {
+        if (curBarriers < NumberOfBarrier) {
+          board[randomX][randomY] = 'BARRIER';
+          curBarriers++;
+        } else {
+          board[randomX][randomY] = 'FOOD';
+          curFoods++;
         }
       }
     }
-    // No empty cells, so we have a tie!
-    return true;
+    return board;
   }
 
-  /**
-   * Return the winner (either 'X' or 'O') or '' if there is no winner.
-   * The board is a matrix of size 3x3 containing either 'X', 'O', or ''.
-   * E.g., getWinner returns 'X' for the following board:
-   *     [['X', 'O', ''],
-   *      ['X', 'O', ''],
-   *      ['X', '', '']]
-   */
-  function getWinner(board: Board): string {
-    let boardString = '';
-    for (let i = 0; i < ROWS; i++) {
-      for (let j = 0; j < COLS; j++) {
-        let cell = board[i][j];
-        boardString += cell === '' ? ' ' : cell;
+  // side effect: update the board with snake
+  function getInitialSnake(board: Board, player: number): Snake {
+    let snake: Snake = {headToTail: [], dead: false, oldTail: null, currentDirection: null};
+    let found: boolean = false;
+
+    while (!found) {
+      let randomX: number = Math.floor((Math.random()*ROWS)+1);
+      let randomY: number = Math.floor((Math.random()*COLS)+1);
+
+      if (board[randomX][randomY] === '') {
+
+        snake.headToTail = [{row: randomX, col: randomY}];
+        found = true;
+
+        if (isBarrierOrBorderOrOpponentOrMySelf(randomX+1, randomY, board)) {
+          snake.currentDirection = {shiftX: 1, shiftY: 0};
+        } else if (isBarrierOrBorderOrOpponentOrMySelf(randomX-1, randomY, board)) {
+          snake.currentDirection = {shiftX: -1, shiftY: 0};
+        } else if (isBarrierOrBorderOrOpponentOrMySelf(randomX, randomY+1, board)) {
+          snake.currentDirection = {shiftX: 0, shiftY: 1};
+        } else if (isBarrierOrBorderOrOpponentOrMySelf(randomX, randomY-1, board)) {
+          snake.currentDirection = {shiftX: 0, shiftY: -1};
+        } else {
+          found = false;
+          snake.headToTail = [];
+        }
       }
     }
-    let win_patterns = [
-      'XXX......',
-      '...XXX...',
-      '......XXX',
-      'X..X..X..',
-      '.X..X..X.',
-      '..X..X..X',
-      'X...X...X',
-      '..X.X.X..'
-    ];
-    for (let win_pattern of win_patterns) {
-      let x_regexp = new RegExp(win_pattern);
-      let o_regexp = new RegExp(win_pattern.replace(/X/g, 'O'));
-      if (x_regexp.test(boardString)) {
-        return 'X';
-      }
-      if (o_regexp.test(boardString)) {
-        return 'O';
+    board[snake.headToTail[0].row][snake.headToTail[0].col] = "SNAKE"+player;
+    return snake;
+  }
+
+  function isBarrierOrBorderOrOpponentOrMySelf(x: number, y: number, board: Board): boolean {
+    if (x < 0 || x >= ROWS || y < 0 || y >= COLS) {
+      return true;
+    }
+    if (board[x][y] != '' || board[x][y] != 'FOOD') {
+      return true;
+    }
+    return false;
+  }
+
+  export function getInitialState(): IState {
+    return {boardWithSnakes: getInitialBoardAndSnakes(), newDirections: []};
+  }
+
+  // return true if two snakes bump against each other
+  // or if time is out and both snake have equal length
+  function isTie(boardWithSnakes: BoardWithSnakes, time: number): boolean {
+    let allDead: boolean = true;
+    for (let snake of boardWithSnakes.snakes) {
+      if (!snake.dead) {
+        allDead = false;
       }
     }
-    return '';
+    if (allDead) {
+      return true;
+    }
+    if (time <= 0) {
+      let isTie = true;
+      for (let i = 0; i < boardWithSnakes.snakes.length-1; i++) {
+        if (boardWithSnakes.snakes[i].headToTail.length != boardWithSnakes.snakes[i+1].headToTail.length) {
+          isTie = false;
+        }
+      }
+      return isTie;
+    }
+    return false;
+  }
+
+  // return the only one player that has live snake, '', '1', '2'
+  function getWinner(boardWithSnakes: BoardWithSnakes): string {
+    let winner: string = '';
+    let countOfLiveSnake: number = 0;
+
+    for (let i = 0; i < boardWithSnakes.snakes.length; i++) {
+      if (!boardWithSnakes.snakes[i].dead) {
+        countOfLiveSnake++;
+        winner = i+1+'';
+      }
+    }
+    if (countOfLiveSnake != 1) {
+      winner = '';
+    }
+    return winner;
   }
 
   /**
@@ -92,69 +159,155 @@ module gameLogic {
    * with index turnIndexBeforeMove makes a move in cell row X col.
    */
   export function createMove(
-      stateBeforeMove: IState, row: number, col: number, turnIndexBeforeMove: number): IMove {
+      stateBeforeMove: IState, newDirections: Direction[], leftTime: number, turnIndexBeforeMove: number): IMove {
+    let end: boolean = false;
     if (!stateBeforeMove) {
       stateBeforeMove = getInitialState();
     }
-    let board: Board = stateBeforeMove.board;
-    if (board[row][col] !== '') {
-      throw new Error("One can only make a move in an empty position!");
-    }
-    if (getWinner(board) !== '' || isTie(board)) {
+    let boardWithSnakes:BoardWithSnakes = stateBeforeMove.boardWithSnakes;
+    if (getWinner(boardWithSnakes) !== '' || isTie(boardWithSnakes, leftTime)) {
       throw new Error("Can only make a move if the game is not over!");
     }
-    let boardAfterMove = angular.copy(board);
-    boardAfterMove[row][col] = turnIndexBeforeMove === 0 ? 'X' : 'O';
-    let winner = getWinner(boardAfterMove);
-    let endMatchScores: number[];
-    let turnIndexAfterMove: number;
-    if (winner !== '' || isTie(boardAfterMove)) {
-      // Game over.
-      turnIndexAfterMove = -1;
-      endMatchScores = winner === 'X' ? [1, 0] : winner === 'O' ? [0, 1] : [0, 0];
+    let boardWithSnakesAfterMove = angular.copy(boardWithSnakes);
+
+    // Game over, time out.
+    if (leftTime <= 0) {
+      end = true;
     } else {
-      // Game continues. Now it's the opponent's turn (the turn switches from 0 to 1 and 1 to 0).
-      turnIndexAfterMove = 1 - turnIndexBeforeMove;
-      endMatchScores = null;
+      // still have time
+      // update snake body depending on get food or not
+      for (let index = 0; index < newDirections.length; index++) {
+        // pass dead snake
+        if (boardWithSnakesAfterMove.snakes[index].dead) {
+          continue;
+        }
+        let head = boardWithSnakesAfterMove.snakes[index].headToTail[0];
+        let newHeadX: number;
+        let newHeadY: number;
+
+        if (newDirections[index] == null) {
+          // keep moving in the same direction
+          newHeadX = head.row + boardWithSnakesAfterMove.snakes[index].currentDirection.shiftX;
+          newHeadY = head.col + boardWithSnakesAfterMove.snakes[index].currentDirection.shiftY;
+        } else {
+          // keep moving in the new direction
+          newHeadX = head.row + newDirections[index].shiftX;
+          newHeadY = head.col + newDirections[index].shiftY;
+        }
+
+        // eat food
+        boardWithSnakesAfterMove.snakes[index].headToTail.unshift({row: newHeadX, col: newHeadY});
+        if (boardWithSnakesAfterMove.board[newHeadX][newHeadY] != 'FOOD') {
+          // remove old tail
+          boardWithSnakesAfterMove.snakes[index].oldTail = boardWithSnakesAfterMove.snakes[index].headToTail.pop();
+        }
+      }
+
+      // update dead info if snake bump into border, barrier or itself or other snakes
+      for (let index = 0; index < boardWithSnakesAfterMove.snakes.length; index++) {
+        let board = boardWithSnakesAfterMove.board;
+        let snake = boardWithSnakesAfterMove.snakes[index];
+        let head = snake.headToTail[0];
+        // bump into border
+        if (head.row < 0 || head.row >= ROWS || head.col < 0 || head.col >= COLS) {
+          snake.dead = true;
+          log.log("dead because bump into border");
+          continue;
+        }
+        // bump into barrier
+        if (board[head.row][head.col] === 'BARRIER') {
+          snake.dead = true;
+          log.log("dead because bump into barrier");
+          continue;
+        }
+        // bump into itself
+        for (let i = 1; i < snake.headToTail.length; i++) {
+          if (snake.headToTail[i].row == head.row && snake.headToTail[i].col == head.col) {
+            snake.dead = true;
+            break;
+          }
+        }
+        // bump into others
+        outer: for (let secondIndex = 0; secondIndex < boardWithSnakesAfterMove.snakes.length; secondIndex++) {
+          if (secondIndex != index) {
+            let anotherSnake = boardWithSnakesAfterMove.snakes[secondIndex];
+            for (let j = 0; j < anotherSnake.headToTail.length; j++) {
+              if (anotherSnake.headToTail[j].row == head.row && anotherSnake.headToTail[j].col == head.col) {
+                snake.dead = true;
+                break outer;
+              }
+            }
+          }
+        }
+      }
+
+      updateBoardWithSnakes(boardWithSnakesAfterMove);
+      log.info("I'm in after", boardWithSnakesAfterMove.board
+          [boardWithSnakesAfterMove.snakes[0].headToTail[0].row]
+          [boardWithSnakesAfterMove.snakes[0].headToTail[0].col]);
     }
-    let delta: BoardDelta = {row: row, col: col};
-    let stateAfterMove: IState = {delta: delta, board: boardAfterMove};
-    return {endMatchScores: endMatchScores, turnIndexAfterMove: turnIndexAfterMove, stateAfterMove: stateAfterMove};
+
+    let winner = getWinner(boardWithSnakesAfterMove);
+    let matchScores: number[] = [];
+    if (winner !== '' || isTie(boardWithSnakesAfterMove, leftTime)) {
+      for (let snake of boardWithSnakesAfterMove.snakes) {
+        matchScores.push(snake.headToTail.length);
+      }
+      end = true;
+    }
+    let stateAfterMove: IState = {newDirections: newDirections, boardWithSnakes: boardWithSnakesAfterMove};
+    return {matchScores: matchScores, stateAfterMove: stateAfterMove, end: end, turnIndexAfterMove: NumberOfPlayer-1-turnIndexBeforeMove};
+  }
+
+  function updateBoardWithSnakes(boardWithSnakes: BoardWithSnakes) {
+    let foodEaten: number = 0;
+    for (let i = 0; i < boardWithSnakes.snakes.length; i++) {
+      let snake: Snake = boardWithSnakes.snakes[i];
+      if (!snake.dead) {
+        // remove old tail
+        if (snake.oldTail != null) {
+          log.info("I'm in old tail", snake.oldTail);
+          boardWithSnakes.board[snake.oldTail.row][snake.oldTail.col] = '';
+        }
+        if (boardWithSnakes.board[snake.headToTail[0].row][snake.headToTail[0].col] === 'FOOD') {
+          foodEaten++;
+        }
+        // add new head
+        boardWithSnakes.board[snake.headToTail[0].row][snake.headToTail[0].col] = "SNAKE"+(i+1);
+        log.info("I'm in new head", snake.headToTail[0].row, snake.headToTail[0].col, boardWithSnakes.board[snake.headToTail[0].row][snake.headToTail[0].col]);
+      }
+    }
+    
+    fillBoardWithFood(boardWithSnakes, foodEaten);
+  }
+  
+  function fillBoardWithFood(boardWithSnakes: BoardWithSnakes, foodEaten: number) {
+    while (foodEaten > 0) {
+      let randomX: number = Math.floor((Math.random()*ROWS)+1);
+      let randomY: number = Math.floor((Math.random()*COLS)+1);
+
+      if (boardWithSnakes.board[randomX][randomY] === '') {
+        boardWithSnakes.board[randomX][randomY] = 'FOOD';
+        foodEaten--;
+      }
+    }
   }
   
   export function createInitialMove(): IMove {
-    return {endMatchScores: null, turnIndexAfterMove: 0, 
-        stateAfterMove: getInitialState()};  
+    return {matchScores: [], stateAfterMove: getInitialState(), end: false, turnIndexAfterMove: 0};
   }
 
   export function checkMoveOk(stateTransition: IStateTransition): void {
-    // We can assume that turnIndexBeforeMove and stateBeforeMove are legal, and we need
-    // to verify that the move is OK.
-    let turnIndexBeforeMove = stateTransition.turnIndexBeforeMove;
-    let stateBeforeMove: IState = stateTransition.stateBeforeMove;
-    let move: IMove = stateTransition.move;
-    if (!stateBeforeMove && turnIndexBeforeMove === 0 &&
-        angular.equals(createInitialMove(), move)) {
-      return;
-    }
-    let deltaValue: BoardDelta = move.stateAfterMove.delta;
-    let row = deltaValue.row;
-    let col = deltaValue.col;
-    let expectedMove = createMove(stateBeforeMove, row, col, turnIndexBeforeMove);
-    if (!angular.equals(move, expectedMove)) {
-      throw new Error("Expected move=" + angular.toJson(expectedMove, true) +
-          ", but got stateTransition=" + angular.toJson(stateTransition, true))
-    }
   }
 
-  export function forSimpleTestHtml() {
-    var move = gameLogic.createMove(null, 0, 0, 0);
-    log.log("move=", move);
-    var params: IStateTransition = {
-      turnIndexBeforeMove: 0,
-      stateBeforeMove: null,
-      move: move,
-      numberOfPlayers: 2};
-    gameLogic.checkMoveOk(params);
-  }
+  // export function forSimpleTestHtml() {
+  //   var move = gameLogic.createMove(null, 0, 0, 0);
+  //   log.log("move=", move);
+  //   var params: IStateTransition = {
+  //     turnIndexBeforeMove: 0,
+  //     stateBeforeMove: null,
+  //     move: move,
+  //     numberOfPlayers: 2};
+  //   gameLogic.checkMoveOk(params);
+  // }
 }

@@ -32,10 +32,16 @@ body {
 }
 
 .r {
-  border-right: 4pt solid black;
+  border-right: 1pt solid lightgrey;
 }
 .b {
-  border-bottom: 4pt solid black;
+  border-bottom: 1pt solid lightgrey;
+}
+.l {
+  border-left: 1pt solid lightgrey;
+}
+.t {
+  border-top: 1pt solid lightgrey;
 }
 
 .slowlyAppear {

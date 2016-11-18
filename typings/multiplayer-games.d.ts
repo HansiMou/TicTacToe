@@ -8,9 +8,10 @@ declare var $interval: angular.IIntervalService;
 // When the match ends, set turnIndexAfterMove -1 and endMatchScores to an array of scores.
 // When the match is ongoing, set turnIndexAfterMove to a valid index and endMatchScores to null.
 interface IMove {
-  endMatchScores: number[];
   turnIndexAfterMove: number;
+  matchScores: number[];
   stateAfterMove: IState;
+  end: boolean;
 }
 interface IStateTransition {
   turnIndexBeforeMove : number;
@@ -32,7 +33,6 @@ interface IUpdateUI extends IStateTransition {
 interface IGame {
   minNumberOfPlayers: number;
   maxNumberOfPlayers: number;
-  checkMoveOk(stateTransition: IStateTransition): void;
   updateUI(update: IUpdateUI): void;
   gotMessageFromPlatform(message: any): void;
 }

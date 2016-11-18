@@ -9,15 +9,15 @@ var game;
     game.didMakeMove = false; // You can only make one move per updateUI
     game.animationEndedTimeout = null;
     game.state = null;
+    game.boardSize = gameLogic.ROWS;
     function init() {
-        registerServiceWorker();
-        translate.setTranslations(getTranslations());
-        translate.setLanguage('en');
+        // registerServiceWorker();
+        // translate.setTranslations(getTranslations());
+        // translate.setLanguage('en');
         resizeGameAreaService.setWidthToHeight(1);
         moveService.setGame({
             minNumberOfPlayers: 2,
-            maxNumberOfPlayers: 2,
-            checkMoveOk: gameLogic.checkMoveOk,
+            maxNumberOfPlayers: 3,
             updateUI: updateUI,
             gotMessageFromPlatform: null,
         });
@@ -70,11 +70,10 @@ var game;
         }
     }
     function maybeSendComputerMove() {
-        if (!isComputerTurn())
-            return;
-        var move = aiService.findComputerMove(game.currentUpdateUI.move);
-        log.info("Computer move: ", move);
-        makeMove(move);
+        // if (!isComputerTurn()) return;
+        // let move = aiService.findComputerMove(currentUpdateUI.move);
+        // log.info("Computer move: ", move);
+        // makeMove(move);
     }
     function makeMove(move) {
         if (game.didMakeMove) {
@@ -112,7 +111,7 @@ var game;
         }
         var nextMove = null;
         try {
-            nextMove = gameLogic.createMove(game.state, row, col, game.currentUpdateUI.move.turnIndexAfterMove);
+            nextMove = gameLogic.createMove(game.state, [null, null], 100000, game.currentUpdateUI.move.turnIndexAfterMove);
         }
         catch (e) {
             log.info(["Cell is already full in position:", row, col]);
@@ -123,23 +122,44 @@ var game;
     }
     game.cellClicked = cellClicked;
     function shouldShowImage(row, col) {
-        var cell = game.state.board[row][col];
-        return cell !== "";
+        // let cell = state.board[row][col];
+        // return cell !== "";
+        return true;
     }
     game.shouldShowImage = shouldShowImage;
-    function isPieceX(row, col) {
-        return game.state.board[row][col] === 'X';
+    function isFood(row, col) {
+        return game.state.boardWithSnakes.board[row][col] === 'FOOD';
     }
-    game.isPieceX = isPieceX;
-    function isPieceO(row, col) {
-        return game.state.board[row][col] === 'O';
+    game.isFood = isFood;
+    function isBarrier(row, col) {
+        return game.state.boardWithSnakes.board[row][col] === 'BARRIER';
     }
-    game.isPieceO = isPieceO;
+    game.isBarrier = isBarrier;
+    function isSnakeOne(row, col) {
+        return game.state.boardWithSnakes.board[row][col] === 'SNAKE1';
+    }
+    game.isSnakeOne = isSnakeOne;
+    function isSnakeTwo(row, col) {
+        return game.state.boardWithSnakes.board[row][col] === 'SNAKE2';
+    }
+    game.isSnakeTwo = isSnakeTwo;
+    function isSnakeThree(row, col) {
+        return game.state.boardWithSnakes.board[row][col] === 'SNAKE3';
+    }
+    game.isSnakeThree = isSnakeThree;
     function shouldSlowlyAppear(row, col) {
         return game.state.delta &&
             game.state.delta.row === row && game.state.delta.col === col;
     }
     game.shouldSlowlyAppear = shouldSlowlyAppear;
+    function getNumber() {
+        var res = [];
+        for (var i = 0; i < gameLogic.ROWS; i++) {
+            res.push(i);
+        }
+        return res;
+    }
+    game.getNumber = getNumber;
 })(game || (game = {}));
 angular.module('myApp', ['gameServices'])
     .run(function () {

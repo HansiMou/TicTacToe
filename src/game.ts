@@ -18,16 +18,16 @@ module game {
   export let didMakeMove: boolean = false; // You can only make one move per updateUI
   export let animationEndedTimeout: ng.IPromise<any> = null;
   export let state: IState = null;
+  export const boardSize = gameLogic.ROWS;
 
   export function init() {
-    registerServiceWorker();
-    translate.setTranslations(getTranslations());
-    translate.setLanguage('en');
+    // registerServiceWorker();
+    // translate.setTranslations(getTranslations());
+    // translate.setLanguage('en');
     resizeGameAreaService.setWidthToHeight(1);
     moveService.setGame({
       minNumberOfPlayers: 2,
-      maxNumberOfPlayers: 2,
-      checkMoveOk: gameLogic.checkMoveOk,
+      maxNumberOfPlayers: 3,
       updateUI: updateUI,
       gotMessageFromPlatform: null,
     });
@@ -82,10 +82,10 @@ module game {
   }
 
   function maybeSendComputerMove() {
-    if (!isComputerTurn()) return;
-    let move = aiService.findComputerMove(currentUpdateUI.move);
-    log.info("Computer move: ", move);
-    makeMove(move);
+    // if (!isComputerTurn()) return;
+    // let move = aiService.findComputerMove(currentUpdateUI.move);
+    // log.info("Computer move: ", move);
+    // makeMove(move);
   }
 
   function makeMove(move: IMove) {
@@ -131,7 +131,7 @@ module game {
     let nextMove: IMove = null;
     try {
       nextMove = gameLogic.createMove(
-          state, row, col, currentUpdateUI.move.turnIndexAfterMove);
+          state, [null, null], 100000, currentUpdateUI.move.turnIndexAfterMove);
     } catch (e) {
       log.info(["Cell is already full in position:", row, col]);
       return;
@@ -141,21 +141,41 @@ module game {
   }
 
   export function shouldShowImage(row: number, col: number): boolean {
-    let cell = state.board[row][col];
-    return cell !== "";
+    // let cell = state.board[row][col];
+    // return cell !== "";
+    return true;
   }
 
-  export function isPieceX(row: number, col: number): boolean {
-    return state.board[row][col] === 'X';
+  export function isFood(row: number, col: number): boolean {
+    return state.boardWithSnakes.board[row][col] === 'FOOD';
   }
 
-  export function isPieceO(row: number, col: number): boolean {
-    return state.board[row][col] === 'O';
+  export function isBarrier(row: number, col: number): boolean {
+    return state.boardWithSnakes.board[row][col] === 'BARRIER';
+  }
+
+  export function isSnakeOne(row: number, col: number): boolean {
+    return state.boardWithSnakes.board[row][col] === 'SNAKE1';
+  }
+  export function isSnakeTwo(row: number, col: number): boolean {
+    return state.boardWithSnakes.board[row][col] === 'SNAKE2';
+  }
+
+  export function isSnakeThree(row: number, col: number): boolean {
+    return state.boardWithSnakes.board[row][col] === 'SNAKE3';
   }
 
   export function shouldSlowlyAppear(row: number, col: number): boolean {
     return state.delta &&
         state.delta.row === row && state.delta.col === col;
+  }
+
+  export function getNumber(): number[] {
+    let res: number[] = [];
+    for (let i = 0; i < gameLogic.ROWS; i++) {
+      res.push(i);
+    }
+    return res;
   }
 }
 

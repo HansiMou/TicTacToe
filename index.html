@@ -5,8 +5,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>TicTacToe</title>
-  <meta name="description" content="TicTacToe game">
+  <title>multiplayer-snake</title>
+  <meta name="description" content="snake game">
   <link rel="shortcut icon" type="image/x-icon" href="data:image/x-icon;,"><!-- Suppress browser request for favicon.ico -->
 
   <!-- To ensure CSS files are downloaded in parallel, always include external CSS before external JavaScript. -->
@@ -24,33 +24,48 @@
 </head>
 <body ng-cloak>
 <div id="gameArea">
-  <div ng-repeat="row in [0, 1, 2]"
-      style="position:absolute; top:{{row * 33}}%; left:0; width:100%; height:33%;">
-    <div ng-repeat="col in [0, 1, 2]"
-        style="position:absolute; top:0; left:{{col * 33}}%; width:33%; height:100%;"
-        ng-class="{r: col < 2, b: row < 2}"
+  <div ng-repeat="row in game.getNumber()"
+      style="position:absolute; top:{{row*100/game.boardSize}}%; left:0; width:100%; height:3.3%;">
+    <div ng-repeat="col in game.getNumber()"
+        style="position:absolute; top:0; left:{{col * 3.3}}%; width:3.3%; height:100%;"
+        ng-class="{t: row < 1, l: col < 1, r: col < 30, b: row < 30}"
+        id="{{'e2e_test_div_' + row + 'x' + col}}"
         ng-click="game.cellClicked(row, col)"
-        id="{{'e2e_test_div_' + row + 'x' + col}}">
       <div style="width:100%; height: 100%"
-          ng-class="{slowlyAppear: game.shouldSlowlyAppear(row, col)}"
           ng-if="game.shouldShowImage(row, col)">
-        <svg ng-if="game.isPieceO(row, col)"
+          <!--ng-class="{slowlyAppear: game.shouldSlowlyAppear(row, col)}"-->
+        <svg ng-if="game.isFood(row, col)"
             id="{{'e2e_test_pieceO_' + row + 'x' + col}}"
             width="100%" height="100%">
-          <circle cx="50%" cy="50%" r="27%"
-            stroke="blue" stroke-width="5%" fill="white" />
+          <circle cx="50%" cy="50%" r="47%"
+            stroke="green" stroke-width="5%" fill="green" />0
         </svg>
-        <svg ng-if="game.isPieceX(row, col)"
+        <svg ng-if="game.isSnakeOne(row, col)"
             id="{{'e2e_test_pieceX_' + row + 'x' + col}}"
             width="100%" height="100%">
-          <line x1="25%" y1="25%"
-                x2="75%" y2="75%"
-                stroke="red"
-                stroke-width="5%"/>
-          <line x1="25%" y1="75%"
-                x2="75%" y2="25%"
-                stroke="red"
-                stroke-width="5%"/>
+          <rect height="100%" width="81000%" stroke="blue" fill="blue"></rect>
+        </svg>
+        <svg ng-if="game.isSnakeTwo(row, col)"
+             id="{{'e2e_test_pieceX_' + row + 'x' + col}}"
+             width="100%" height="100%">
+          <rect height="100%" width="100%" stroke="red" fill="red"></rect>
+        </svg>
+        <svg ng-if="game.isSnakeThree(row, col)"
+             id="{{'e2e_test_pieceX_' + row + 'x' + col}}"
+             width="100%" height="100%">
+          <rect height="100%" width="100%" stroke="yellow" fill="yellow"></rect>
+        </svg>
+        <svg ng-if="game.isBarrier(row, col)"
+             id="{{'e2e_test_pieceX_' + row + 'x' + col}}"
+             width="100%" height="100%">
+          <line x1="0%" y1="0%"
+                x2="100%" y2="100%"
+                stroke="black"
+                stroke-width="15%"/>
+          <line x1="0%" y1="100%"
+                x2="100%" y2="0%"
+                stroke="black"
+                stroke-width="15%"/>
         </svg>
       </div>
     </div>
