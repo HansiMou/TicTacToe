@@ -121,7 +121,7 @@ module game {
       snakeThreeMove = null;
     } catch (e) {
       $interval.cancel(action);
-      log.info("Game ended");
+      log.error(e);
       return;
     }
     // Move is legal, make it!
@@ -145,6 +145,10 @@ module game {
 
   export function isSnakeThree(row: number, col: number): boolean {
     return state.boardWithSnakes.board[row][col] === 'SNAKE3';
+  }
+  
+  export function isDeadSnake(row: number, col: number) {
+    return state.boardWithSnakes.board[row][col] === 'STONE';
   }
 
   export function shouldSlowlyAppear(row: number, col: number): boolean {

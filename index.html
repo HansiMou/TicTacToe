@@ -24,10 +24,13 @@
 </head>
 <body ng-cloak ng-keydown="game.keyDown($event.keyCode)">
 <div id="gameArea">
+  <div style="margin-left: 60%;">
+    TODO: Adapters
+  </div>
   <div ng-repeat="row in game.getNumber()"
-      style="position:absolute; top:{{row*100/game.boardSize}}%; left:0; width:100%; height:3.3%;">
+      style="position:absolute; top:{{20+row*80/game.boardSize}}%; right: 30%; width:100%; height:{{80/game.boardSize}}%;">
     <div ng-repeat="col in game.getNumber()"
-        style="position:absolute; top:0; left:{{col * 3.3}}%; width:3.3%; height:100%;"
+        style="position:absolute; top:0; left:{{col*80/game.boardSize}}%; width:{{80/game.boardSize}}%; height:100%;"
         ng-class="{t: row < 1, l: col < 1, r: col < 30, b: row < 30}"
         id="{{'e2e_test_div_' + row + 'x' + col}}">
       <div style="width:100%; height: 100%">
@@ -64,6 +67,11 @@
                 x2="100%" y2="0%"
                 stroke="black"
                 stroke-width="15%"/>
+        </svg>
+        <svg ng-if="game.isDeadSnake(row, col)"
+             id="{{'e2e_test_pieceX_' + row + 'x' + col}}"
+             width="100%" height="100%">
+          <rect height="100%" width="100%" stroke="black" fill="back"></rect>
         </svg>
       </div>
     </div>

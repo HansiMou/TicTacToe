@@ -73,23 +73,42 @@ module gameLogic {
     let found: boolean = false;
 
     while (!found) {
-      let randomX: number = Math.floor((Math.random()*ROWS)+1);
-      let randomY: number = Math.floor((Math.random()*COLS)+1);
+      let randomX: number = Math.floor((Math.random()*ROWS));
+      let randomY: number = Math.floor((Math.random()*COLS));
 
       if (board[randomX][randomY] === '') {
 
         snake.headToTail = [{row: randomX, col: randomY}];
         found = true;
+        let count = 0;
+        let direction: Direction = null;
 
-        if (isBarrierOrBorderOrOpponentOrMySelf(randomX+1, randomY, board)) {
-          snake.currentDirection = {shiftX: 1, shiftY: 0};
-        } else if (isBarrierOrBorderOrOpponentOrMySelf(randomX-1, randomY, board)) {
-          snake.currentDirection = {shiftX: -1, shiftY: 0};
-        } else if (isBarrierOrBorderOrOpponentOrMySelf(randomX, randomY+1, board)) {
-          snake.currentDirection = {shiftX: 0, shiftY: 1};
-        } else if (isBarrierOrBorderOrOpponentOrMySelf(randomX, randomY-1, board)) {
-          snake.currentDirection = {shiftX: 0, shiftY: -1};
-        } else {
+        if (!isBarrierOrBorderOrOpponentOrMySelf(randomX+1, randomY, board)) {
+          count++;
+          if (Math.floor((Math.random()*count)) == 0) {
+            direction = {shiftX: 1, shiftY: 0};
+          }
+        }
+        if (!isBarrierOrBorderOrOpponentOrMySelf(randomX-1, randomY, board)) {
+          count++;
+          if (Math.floor((Math.random()*count)) == 0) {
+            direction = {shiftX: -1, shiftY: 0};
+          }
+        }
+        if (!isBarrierOrBorderOrOpponentOrMySelf(randomX, randomY+1, board)) {
+          count++;
+          if (Math.floor((Math.random()*count)) == 0) {
+            direction = {shiftX: 0, shiftY: 1};
+          }
+        }
+        if (!isBarrierOrBorderOrOpponentOrMySelf(randomX, randomY-1, board)) {
+          count++;
+          if (Math.floor((Math.random()*count)) == 0) {
+            direction = {shiftX: 0, shiftY: -1};
+          }
+        }
+        snake.currentDirection = direction;
+        if (count == 0) {
           found = false;
           snake.headToTail = [];
         }
@@ -103,10 +122,10 @@ module gameLogic {
     if (x < 0 || x >= ROWS || y < 0 || y >= COLS) {
       return true;
     }
-    if (board[x][y] != '' || board[x][y] != 'FOOD') {
-      return true;
+    if (board[x][y] === '' || board[x][y] === 'FOOD') {
+      return false;
     }
-    return false;
+    return true;
   }
 
   export function getInitialState(): IState {
@@ -204,7 +223,7 @@ module gameLogic {
 
         // eat food
         boardWithSnakesAfterMove.snakes[index].headToTail.unshift({row: newHeadX, col: newHeadY});
-        if (boardWithSnakesAfterMove.board[newHeadX][newHeadY] != 'FOOD') {
+        if (boardWithSnakesAfterMove.board[newHeadX][newHeadY] !== 'FOOD') {
           // remove old tail
           boardWithSnakesAfterMove.snakes[index].oldTail = boardWithSnakesAfterMove.snakes[index].headToTail.pop();
         }
@@ -282,6 +301,16 @@ module gameLogic {
         // add new head
         boardWithSnakes.board[snake.headToTail[0].row][snake.headToTail[0].col] = "SNAKE"+(i+1);
         log.info("I'm in new head", snake.headToTail[0].row, snake.headToTail[0].col, boardWithSnakes.board[snake.headToTail[0].row][snake.headToTail[0].col]);
+      } else {
+        // turn snake into stone
+        for (let cell of snake.headToTail) {
+          if (boardWithSnakes.board[cell.row][cell.col] !== 'BARRIER') {
+            boardWithSnakes.board[cell.row][cell.col] = 'STONE';
+          }
+          if (snake.oldTail != null) {
+            boardWithSnakes.board[snake.oldTail.row][snake.oldTail.col] = 'STONE';
+          }
+        }
       }
     }
     
@@ -290,8 +319,8 @@ module gameLogic {
   
   function fillBoardWithFood(boardWithSnakes: BoardWithSnakes, foodEaten: number) {
     while (foodEaten > 0) {
-      let randomX: number = Math.floor((Math.random()*ROWS)+1);
-      let randomY: number = Math.floor((Math.random()*COLS)+1);
+      let randomX: number = Math.floor((Math.random()*ROWS));
+      let randomY: number = Math.floor((Math.random()*COLS));
 
       if (boardWithSnakes.board[randomX][randomY] === '') {
         boardWithSnakes.board[randomX][randomY] = 'FOOD';

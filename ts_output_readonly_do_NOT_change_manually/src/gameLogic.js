@@ -4,7 +4,7 @@ var gameLogic;
     gameLogic.COLS = 30;
     gameLogic.NumberOfBarrier = 5;
     gameLogic.NumberOfPlayer = 2;
-    gameLogic.NumberOfFood = 3;
+    gameLogic.NumberOfFood = 30;
     gameLogic.RemainingTime = 180 * 1000;
     function getInitialBoardAndSnakes() {
         var board = getInitialBoardWithBarriersAndFoods();
@@ -45,24 +45,39 @@ var gameLogic;
         var snake = { headToTail: [], dead: false, oldTail: null, currentDirection: null };
         var found = false;
         while (!found) {
-            var randomX = Math.floor((Math.random() * gameLogic.ROWS) + 1);
-            var randomY = Math.floor((Math.random() * gameLogic.COLS) + 1);
+            var randomX = Math.floor((Math.random() * gameLogic.ROWS));
+            var randomY = Math.floor((Math.random() * gameLogic.COLS));
             if (board[randomX][randomY] === '') {
                 snake.headToTail = [{ row: randomX, col: randomY }];
                 found = true;
-                if (isBarrierOrBorderOrOpponentOrMySelf(randomX + 1, randomY, board)) {
-                    snake.currentDirection = { shiftX: 1, shiftY: 0 };
+                var count = 0;
+                var direction = null;
+                if (!isBarrierOrBorderOrOpponentOrMySelf(randomX + 1, randomY, board)) {
+                    count++;
+                    if (Math.floor((Math.random() * count)) == 0) {
+                        direction = { shiftX: 1, shiftY: 0 };
+                    }
                 }
-                else if (isBarrierOrBorderOrOpponentOrMySelf(randomX - 1, randomY, board)) {
-                    snake.currentDirection = { shiftX: -1, shiftY: 0 };
+                if (!isBarrierOrBorderOrOpponentOrMySelf(randomX - 1, randomY, board)) {
+                    count++;
+                    if (Math.floor((Math.random() * count)) == 0) {
+                        direction = { shiftX: -1, shiftY: 0 };
+                    }
                 }
-                else if (isBarrierOrBorderOrOpponentOrMySelf(randomX, randomY + 1, board)) {
-                    snake.currentDirection = { shiftX: 0, shiftY: 1 };
+                if (!isBarrierOrBorderOrOpponentOrMySelf(randomX, randomY + 1, board)) {
+                    count++;
+                    if (Math.floor((Math.random() * count)) == 0) {
+                        direction = { shiftX: 0, shiftY: 1 };
+                    }
                 }
-                else if (isBarrierOrBorderOrOpponentOrMySelf(randomX, randomY - 1, board)) {
-                    snake.currentDirection = { shiftX: 0, shiftY: -1 };
+                if (!isBarrierOrBorderOrOpponentOrMySelf(randomX, randomY - 1, board)) {
+                    count++;
+                    if (Math.floor((Math.random() * count)) == 0) {
+                        direction = { shiftX: 0, shiftY: -1 };
+                    }
                 }
-                else {
+                snake.currentDirection = direction;
+                if (count == 0) {
                     found = false;
                     snake.headToTail = [];
                 }
@@ -75,10 +90,10 @@ var gameLogic;
         if (x < 0 || x >= gameLogic.ROWS || y < 0 || y >= gameLogic.COLS) {
             return true;
         }
-        if (board[x][y] != '' || board[x][y] != 'FOOD') {
-            return true;
+        if (board[x][y] === '' || board[x][y] === 'FOOD') {
+            return false;
         }
-        return false;
+        return true;
     }
     function getInitialState() {
         return { boardWithSnakes: getInitialBoardAndSnakes(), newDirections: [] };
@@ -136,7 +151,7 @@ var gameLogic;
         if (getWinner(boardWithSnakes) !== '' || isTie(boardWithSnakes, leftTime)) {
             throw new Error("Can only make a move if the game is not over!");
         }
-        var boardWithSnakesAfterMove = angular.copy(boardWithSnakes);
+        var boardWithSnakesAfterMove = { board: angular.copy(boardWithSnakes.board), snakes: angular.copy(boardWithSnakes.snakes) };
         // Game over, time out.
         if (leftTime <= 0) {
             end = true;
@@ -170,7 +185,7 @@ var gameLogic;
                 }
                 // eat food
                 boardWithSnakesAfterMove.snakes[index].headToTail.unshift({ row: newHeadX, col: newHeadY });
-                if (boardWithSnakesAfterMove.board[newHeadX][newHeadY] != 'FOOD') {
+                if (boardWithSnakesAfterMove.board[newHeadX][newHeadY] !== 'FOOD') {
                     // remove old tail
                     boardWithSnakesAfterMove.snakes[index].oldTail = boardWithSnakesAfterMove.snakes[index].headToTail.pop();
                 }
@@ -245,13 +260,25 @@ var gameLogic;
                 boardWithSnakes.board[snake.headToTail[0].row][snake.headToTail[0].col] = "SNAKE" + (i + 1);
                 log.info("I'm in new head", snake.headToTail[0].row, snake.headToTail[0].col, boardWithSnakes.board[snake.headToTail[0].row][snake.headToTail[0].col]);
             }
+            else {
+                // turn snake into stone
+                for (var _i = 0, _a = snake.headToTail; _i < _a.length; _i++) {
+                    var cell = _a[_i];
+                    if (boardWithSnakes.board[cell.row][cell.col] !== 'BARRIER') {
+                        boardWithSnakes.board[cell.row][cell.col] = 'STONE';
+                    }
+                    if (snake.oldTail != null) {
+                        boardWithSnakes.board[snake.oldTail.row][snake.oldTail.col] = 'STONE';
+                    }
+                }
+            }
         }
         fillBoardWithFood(boardWithSnakes, foodEaten);
     }
     function fillBoardWithFood(boardWithSnakes, foodEaten) {
         while (foodEaten > 0) {
-            var randomX = Math.floor((Math.random() * gameLogic.ROWS) + 1);
-            var randomY = Math.floor((Math.random() * gameLogic.COLS) + 1);
+            var randomX = Math.floor((Math.random() * gameLogic.ROWS));
+            var randomY = Math.floor((Math.random() * gameLogic.COLS));
             if (boardWithSnakes.board[randomX][randomY] === '') {
                 boardWithSnakes.board[randomX][randomY] = 'FOOD';
                 foodEaten--;

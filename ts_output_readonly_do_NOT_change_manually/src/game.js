@@ -103,7 +103,7 @@ var game;
         }
         catch (e) {
             $interval.cancel(game.action);
-            log.info("Game ended");
+            log.error(e);
             return;
         }
         // Move is legal, make it!
@@ -130,6 +130,10 @@ var game;
         return game.state.boardWithSnakes.board[row][col] === 'SNAKE3';
     }
     game.isSnakeThree = isSnakeThree;
+    function isDeadSnake(row, col) {
+        return game.state.boardWithSnakes.board[row][col] === 'STONE';
+    }
+    game.isDeadSnake = isDeadSnake;
     function shouldSlowlyAppear(row, col) {
         return game.state.delta &&
             game.state.delta.row === row && game.state.delta.col === col;
