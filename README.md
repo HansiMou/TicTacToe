@@ -1,13 +1,13 @@
 demo site: https://hansimou.github.io/multiplayer-snake/index.html
 
-If you’re using a MAC:
+1. If you’re using a MAC:
+
 If you have XCode (you don’t need to install it), run (and agree to XCode license terms):
 $ sudo xcodebuild -license
 Make sure you have Chrome installed on your computer.
 
 
-Install npm and NodeJS, see instructions.
-
+2. Install npm and NodeJS, see instructions.
 
 Make sure you have at least these versions:
 `$ npm --version`
@@ -20,19 +20,18 @@ If your npm version is lower then the above versions, run:
 `$ sudo n stable`
 `$ sudo npm install -g npm`
 
-
 (Note about sudo: you only need it if you run on a MAC/unix; do not write sudo on windows)
 If your node/npm version is still lower (e.g., on windows it’s ~4), it may be fine. Continue with the instructions, and if all works, you’re good :)
 
 
-Fork this project:
+3. Fork this project:
 
-Then clone it locally:
+4. Then clone it locally:
 `$ git clone https://github.com/<<YOUR_GITHUB_USERNAME>>/multiplayer-snake.git`
 Go to the newly created directory, and double click on index.html to open it in the browser and play it.
 
 
-Install all the modules in package.json by running:
+5. Install all the modules in package.json by running:
 `$ sudo npm install`
 You will see some warnings (ignore warnings, but email the group if you see errors), e.g.,
 npm WARN deprecated lodash@0.9.2: lodash@<2.0.0 is no longer maintained.
@@ -58,6 +57,8 @@ That allows you to run tsc instead of ./node_modules/typescript/bin/tsc
 Verify you have the latest version of the compiler:
 `$ tsc --version`
 message TS6029: Version 1.7.5
+
+6. How to refactor code
 Run this command from the root (.) directory, NOT from the src directory:
 `$ tsc --watch`
 This will run TypeScript-Compiler (tsc) and watch for changes in your ts files.
