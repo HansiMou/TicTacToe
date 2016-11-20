@@ -5,7 +5,6 @@ var gameLogic;
     gameLogic.NumberOfBarrier = 15;
     gameLogic.NumberOfPlayer = 2;
     gameLogic.NumberOfFood = 15;
-    gameLogic.RemainingTime = 180 * 1000;
     function getInitialBoardAndSnakes() {
         var board = getInitialBoardWithBarriersAndFoods();
         var snakes = [];
@@ -95,6 +94,7 @@ var gameLogic;
         }
         return true;
     }
+    gameLogic.isBarrierOrBorderOrOpponentOrMySelf = isBarrierOrBorderOrOpponentOrMySelf;
     function getInitialState() {
         return { boardWithSnakes: getInitialBoardAndSnakes(), newDirections: [] };
     }
@@ -240,7 +240,7 @@ var gameLogic;
             end = true;
         }
         var stateAfterMove = { newDirections: newDirections, boardWithSnakes: boardWithSnakesAfterMove };
-        return { matchScores: matchScores, stateAfterMove: stateAfterMove, end: end, turnIndexAfterMove: gameLogic.NumberOfPlayer - 1 - turnIndexBeforeMove };
+        return { stateAfterMove: stateAfterMove, end: end, turnIndexAfterMove: gameLogic.NumberOfPlayer - 1 - turnIndexBeforeMove };
     }
     gameLogic.createMove = createMove;
     function updateBoardWithSnakes(boardWithSnakes) {
@@ -251,7 +251,9 @@ var gameLogic;
                 // remove old tail
                 if (snake.oldTail != null) {
                     log.info("I'm in old tail", snake.oldTail);
-                    boardWithSnakes.board[snake.oldTail.row][snake.oldTail.col] = '';
+                    if (boardWithSnakes.board[snake.oldTail.row][snake.oldTail.col] === "SNAKE" + (i + 1)) {
+                        boardWithSnakes.board[snake.oldTail.row][snake.oldTail.col] = '';
+                    }
                 }
                 if (boardWithSnakes.board[snake.headToTail[0].row][snake.headToTail[0].col] === 'FOOD') {
                     foodEaten++;

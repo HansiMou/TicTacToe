@@ -9,7 +9,6 @@ declare var $interval: angular.IIntervalService;
 // When the match is ongoing, set turnIndexAfterMove to a valid index and endMatchScores to null.
 interface IMove {
   turnIndexAfterMove: number;
-  matchScores: number[];
   stateAfterMove: IState;
   end: boolean;
 }

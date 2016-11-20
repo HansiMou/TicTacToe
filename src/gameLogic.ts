@@ -30,7 +30,6 @@ module gameLogic {
   export let NumberOfBarrier = 15;
   export let NumberOfPlayer = 2;
   export let NumberOfFood = 15;
-  export let RemainingTime = 180*1000;
 
   function getInitialBoardAndSnakes(): BoardWithSnakes {
     let board: Board = getInitialBoardWithBarriersAndFoods();
@@ -118,7 +117,7 @@ module gameLogic {
     return snake;
   }
 
-  function isBarrierOrBorderOrOpponentOrMySelf(x: number, y: number, board: Board): boolean {
+  export function isBarrierOrBorderOrOpponentOrMySelf(x: number, y: number, board: Board): boolean {
     if (x < 0 || x >= ROWS || y < 0 || y >= COLS) {
       return true;
     }
@@ -279,7 +278,7 @@ module gameLogic {
       end = true;
     }
     let stateAfterMove: IState = {newDirections: newDirections, boardWithSnakes: boardWithSnakesAfterMove};
-    return {matchScores: matchScores, stateAfterMove: stateAfterMove, end: end, turnIndexAfterMove: NumberOfPlayer-1-turnIndexBeforeMove};
+    return {stateAfterMove: stateAfterMove, end: end, turnIndexAfterMove: NumberOfPlayer-1-turnIndexBeforeMove};
   }
 
   function updateBoardWithSnakes(boardWithSnakes: BoardWithSnakes) {
@@ -290,7 +289,9 @@ module gameLogic {
         // remove old tail
         if (snake.oldTail != null) {
           log.info("I'm in old tail", snake.oldTail);
-          boardWithSnakes.board[snake.oldTail.row][snake.oldTail.col] = '';
+          if (boardWithSnakes.board[snake.oldTail.row][snake.oldTail.col] === "SNAKE"+(i+1)) {
+            boardWithSnakes.board[snake.oldTail.row][snake.oldTail.col] = '';
+          }
         }
         if (boardWithSnakes.board[snake.headToTail[0].row][snake.headToTail[0].col] === 'FOOD') {
           foodEaten++;
@@ -300,7 +301,6 @@ module gameLogic {
         log.info("I'm in new head", snake.headToTail[0].row, snake.headToTail[0].col, boardWithSnakes.board[snake.headToTail[0].row][snake.headToTail[0].col]);
       } else {
         // turn snake into stone
-
         for (let i = 1; i < snake.headToTail.length; i++) {
           let cell = snake.headToTail[i];
           if (cell.row >= 0 && cell.row < ROWS && cell.col >= 0 && cell.col < COLS) {

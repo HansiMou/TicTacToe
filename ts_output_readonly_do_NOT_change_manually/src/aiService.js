@@ -1,52 +1,74 @@
 var aiService;
 (function (aiService) {
     /** Returns the move that the computer player should do for the given state in move. */
-    function findComputerMove(move) {
-        return createComputerMove(move, 
-        // at most 1 second for the AI to choose a move (but might be much quicker)
-        { millisecondsLimit: 1000 });
-    }
-    aiService.findComputerMove = findComputerMove;
-    /**
-     * Returns all the possible moves for the given state and turnIndexBeforeMove.
-     * Returns an empty array if the game is over.
-     */
-    function getPossibleMoves(state, turnIndexBeforeMove) {
-        var possibleMoves = [];
-        for (var i = 0; i < gameLogic.ROWS; i++) {
-            for (var j = 0; j < gameLogic.COLS; j++) {
-                try {
-                    possibleMoves.push(gameLogic.createMove(state, i, j, turnIndexBeforeMove));
+    function findComputerMove(computerOrHuman, boardWithSnake) {
+        var res = [];
+        for (var i = 0; i < computerOrHuman.length; i++) {
+            if (computerOrHuman[i] == 1) {
+                res.push(null);
+            }
+            else {
+                var board = boardWithSnake.board;
+                var head = boardWithSnake.snakes[i].headToTail[0];
+                var tempDirection = { shiftX: 1, shiftY: 0 };
+                var count = 0;
+                if (head.row + 1 < gameLogic.ROWS) {
+                    if (board[head.row + 1][head.col] === 'FOOD') {
+                        tempDirection = { shiftX: 1, shiftY: 0 };
+                        res.push(tempDirection);
+                        continue;
+                    }
+                    else if (!gameLogic.isBarrierOrBorderOrOpponentOrMySelf(head.row + 1, head.col, board)) {
+                        count++;
+                        if (Math.floor(Math.random() * count) == 0) {
+                            tempDirection = { shiftX: 1, shiftY: 0 };
+                        }
+                    }
                 }
-                catch (e) {
+                if (head.row - 1 >= 0) {
+                    if (board[head.row - 1][head.col] === 'FOOD') {
+                        tempDirection = { shiftX: -1, shiftY: 0 };
+                        res.push(tempDirection);
+                        continue;
+                    }
+                    else if (!gameLogic.isBarrierOrBorderOrOpponentOrMySelf(head.row - 1, head.col, board)) {
+                        count++;
+                        if (Math.floor(Math.random() * count) == 0) {
+                            tempDirection = { shiftX: -1, shiftY: 0 };
+                        }
+                    }
                 }
+                if (head.col + 1 < gameLogic.ROWS) {
+                    if (board[head.row][head.col + 1] === 'FOOD') {
+                        tempDirection = { shiftX: 0, shiftY: 1 };
+                        res.push(tempDirection);
+                        continue;
+                    }
+                    else if (!gameLogic.isBarrierOrBorderOrOpponentOrMySelf(head.row, head.col + 1, board)) {
+                        count++;
+                        if (Math.floor(Math.random() * count) == 0) {
+                            tempDirection = { shiftX: 0, shiftY: 1 };
+                        }
+                    }
+                }
+                if (head.col - 1 >= 0) {
+                    if (board[head.row][head.col - 1] === 'FOOD') {
+                        tempDirection = { shiftX: 0, shiftY: -1 };
+                        res.push(tempDirection);
+                        continue;
+                    }
+                    else if (!gameLogic.isBarrierOrBorderOrOpponentOrMySelf(head.row, head.col - 1, board)) {
+                        count++;
+                        if (Math.floor(Math.random() * count) == 0) {
+                            tempDirection = { shiftX: 0, shiftY: -1 };
+                        }
+                    }
+                }
+                res.push(tempDirection);
             }
         }
-        return possibleMoves;
+        return res;
     }
-    aiService.getPossibleMoves = getPossibleMoves;
-    /**
-     * Returns the move that the computer player should do for the given state.
-     * alphaBetaLimits is an object that sets a limit on the alpha-beta search,
-     * and it has either a millisecondsLimit or maxDepth field:
-     * millisecondsLimit is a time limit, and maxDepth is a depth limit.
-     */
-    function createComputerMove(move, alphaBetaLimits) {
-        // We use alpha-beta search, where the search states are TicTacToe moves.
-        return alphaBetaService.alphaBetaDecision(move, move.turnIndexAfterMove, getNextStates, getStateScoreForIndex0, null, alphaBetaLimits);
-    }
-    aiService.createComputerMove = createComputerMove;
-    function getStateScoreForIndex0(move, playerIndex) {
-        var endMatchScores = move.endMatchScores;
-        if (endMatchScores) {
-            return endMatchScores[0] > endMatchScores[1] ? Number.POSITIVE_INFINITY
-                : endMatchScores[0] < endMatchScores[1] ? Number.NEGATIVE_INFINITY
-                    : 0;
-        }
-        return 0;
-    }
-    function getNextStates(move, playerIndex) {
-        return getPossibleMoves(move.stateAfterMove, playerIndex);
-    }
+    aiService.findComputerMove = findComputerMove;
 })(aiService || (aiService = {}));
 //# sourceMappingURL=aiService.js.map

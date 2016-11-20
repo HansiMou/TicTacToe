@@ -1,53 +1,71 @@
 module aiService {
   /** Returns the move that the computer player should do for the given state in move. */
-  export function findComputerMove(move: IMove): IMove {
-    return createComputerMove(move,
-        // at most 1 second for the AI to choose a move (but might be much quicker)
-        {millisecondsLimit: 1000});
-  }
+  export function findComputerMove(computerOrHuman: number[], boardWithSnake: BoardWithSnakes): Direction[] {
+    let res: Direction[] = [];
+    for (let i = 0; i < computerOrHuman.length; i++) {
+      if (computerOrHuman[i] == 1) {
+        res.push(null);
+      }
+      else {
+        let board: Board = boardWithSnake.board;
+        let head: Cell = boardWithSnake.snakes[i].headToTail[0];
+        let tempDirection: Direction = {shiftX: 1, shiftY: 0};
+        let count: number = 0;
 
-  /**
-   * Returns all the possible moves for the given state and turnIndexBeforeMove.
-   * Returns an empty array if the game is over.
-   */
-  export function getPossibleMoves(state: IState, turnIndexBeforeMove: number): IMove[] {
-    let possibleMoves: IMove[] = [];
-    for (let i = 0; i < gameLogic.ROWS; i++) {
-      for (let j = 0; j < gameLogic.COLS; j++) {
-        try {
-          possibleMoves.push(gameLogic.createMove(state, i, j, turnIndexBeforeMove));
-        } catch (e) {
-          // The cell in that position was full.
+        if (head.row+1 < gameLogic.ROWS) {
+          if (board[head.row+1][head.col] === 'FOOD') {
+            tempDirection = {shiftX: 1, shiftY: 0};
+            res.push(tempDirection);
+            continue;
+          } else if (!gameLogic.isBarrierOrBorderOrOpponentOrMySelf(head.row+1, head.col, board)) {
+            count++;
+            if (Math.floor(Math.random()*count) == 0) {
+              tempDirection = {shiftX: 1, shiftY: 0};
+            }
+          }
         }
+
+        if (head.row-1 >= 0) {
+          if (board[head.row-1][head.col] === 'FOOD') {
+            tempDirection = {shiftX: -1, shiftY: 0};
+            res.push(tempDirection);
+            continue;
+          } else if (!gameLogic.isBarrierOrBorderOrOpponentOrMySelf(head.row-1, head.col, board)) {
+            count++;
+            if (Math.floor(Math.random()*count) == 0) {
+              tempDirection = {shiftX: -1, shiftY: 0};
+            }
+          }
+        }
+
+        if (head.col+1 < gameLogic.ROWS) {
+          if (board[head.row][head.col+1] === 'FOOD') {
+            tempDirection = {shiftX: 0, shiftY: 1};
+            res.push(tempDirection);
+            continue;
+          } else if (!gameLogic.isBarrierOrBorderOrOpponentOrMySelf(head.row, head.col+1, board)) {
+            count++;
+            if (Math.floor(Math.random()*count) == 0) {
+              tempDirection = {shiftX: 0, shiftY: 1};
+            }
+          }
+        }
+
+        if (head.col-1 >= 0) {
+          if (board[head.row][head.col-1] === 'FOOD') {
+            tempDirection = {shiftX: 0, shiftY: -1};
+            res.push(tempDirection);
+            continue;
+          } else if (!gameLogic.isBarrierOrBorderOrOpponentOrMySelf(head.row, head.col-1, board)) {
+            count++;
+            if (Math.floor(Math.random()*count) == 0) {
+              tempDirection = {shiftX: 0, shiftY: -1};
+            }
+          }
+        }
+        res.push(tempDirection);
       }
     }
-    return possibleMoves;
-  }
-
-  /**
-   * Returns the move that the computer player should do for the given state.
-   * alphaBetaLimits is an object that sets a limit on the alpha-beta search,
-   * and it has either a millisecondsLimit or maxDepth field:
-   * millisecondsLimit is a time limit, and maxDepth is a depth limit.
-   */
-  export function createComputerMove(
-      move: IMove, alphaBetaLimits: IAlphaBetaLimits): IMove {
-    // We use alpha-beta search, where the search states are TicTacToe moves.
-    return alphaBetaService.alphaBetaDecision(
-        move, move.turnIndexAfterMove, getNextStates, getStateScoreForIndex0, null, alphaBetaLimits);
-  }
-
-  function getStateScoreForIndex0(move: IMove, playerIndex: number): number {
-    let endMatchScores = move.endMatchScores;
-    if (endMatchScores) {
-      return endMatchScores[0] > endMatchScores[1] ? Number.POSITIVE_INFINITY
-          : endMatchScores[0] < endMatchScores[1] ? Number.NEGATIVE_INFINITY
-          : 0;
-    }
-    return 0;
-  }
-
-  function getNextStates(move: IMove, playerIndex: number): IMove[] {
-    return getPossibleMoves(move.stateAfterMove, playerIndex);
+    return res;
   }
 }

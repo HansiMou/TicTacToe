@@ -16,6 +16,7 @@ var game;
     game.animationEndedTimeout = null;
     game.state = null;
     game.action = null;
+    game.computerAction = null;
     game.snakeOneMove = null;
     game.snakeTwoMove = null;
     game.snakeThreeMove = null;
@@ -38,14 +39,6 @@ var game;
         game.state = params.move.stateAfterMove;
         if (isFirstMove()) {
             game.state = gameLogic.getInitialState();
-            if (isMyTurn())
-                makeMove(gameLogic.createInitialMove());
-        }
-        else {
-            // We calculate the AI move only after the animation finishes,
-            // because if we call aiService now
-            // then the animation will be paused until the javascript finishes.
-            game.animationEndedTimeout = $timeout(animationEndedCallback, 500);
         }
     }
     game.updateUI = updateUI;
@@ -75,26 +68,7 @@ var game;
     function isFirstMove() {
         return !game.currentUpdateUI.move.stateAfterMove;
     }
-    function yourPlayerIndex() {
-        return game.currentUpdateUI.yourPlayerIndex;
-    }
-    function isComputer() {
-        return game.currentUpdateUI.playersInfo[game.currentUpdateUI.yourPlayerIndex].playerId === '';
-    }
-    function isComputerTurn() {
-        return isMyTurn() && isComputer();
-    }
-    function isHumanTurn() {
-        return isMyTurn() && !isComputer();
-    }
-    function isMyTurn() {
-        return !game.didMakeMove &&
-            game.currentUpdateUI.move.turnIndexAfterMove >= 0 &&
-            game.currentUpdateUI.yourPlayerIndex === game.currentUpdateUI.move.turnIndexAfterMove; // it's my turn
-    }
     function move() {
-        if (!isHumanTurn())
-            return;
         if (window.location.search === '?throwException') {
             throw new Error("Throwing the error because URL has '?throwException'");
         }
@@ -115,7 +89,21 @@ var game;
         makeMove(nextMove);
     }
     game.move = move;
-    function refreshEverything() {
+    function computerMove() {
+        if (game.currentUpdateUI.move.stateAfterMove) {
+            var computerMoves = aiService.findComputerMove(game.ComputerOrHuman, game.currentUpdateUI.move.stateAfterMove.boardWithSnakes);
+            if (game.ComputerOrHuman[0] == -1) {
+                game.snakeOneMove = computerMoves[0];
+            }
+            if (game.ComputerOrHuman[1] == -1) {
+                game.snakeTwoMove = computerMoves[1];
+            }
+            if (game.ComputerOrHuman[2] == -1) {
+                game.snakeThreeMove = computerMoves[2];
+            }
+        }
+    }
+    function resetEverything() {
         $interval.cancel(game.action);
         game.action = null;
         game.RemainingTime = game.ALLTIME;
@@ -147,11 +135,6 @@ var game;
         return game.state.boardWithSnakes.board[row][col] === 'STONE';
     }
     game.isDeadSnake = isDeadSnake;
-    function shouldSlowlyAppear(row, col) {
-        return game.state.delta &&
-            game.state.delta.row === row && game.state.delta.col === col;
-    }
-    game.shouldSlowlyAppear = shouldSlowlyAppear;
     function getNumber() {
         var res = [];
         for (var i = 0; i < gameLogic.ROWS; i++) {
@@ -171,12 +154,12 @@ var game;
     game.getSnakeLength = getSnakeLength;
     function changeFoodNumber() {
         gameLogic.NumberOfFood = game.NumberOfFood;
-        refreshEverything();
+        resetEverything();
     }
     game.changeFoodNumber = changeFoodNumber;
     function changeBarrierNumber() {
         gameLogic.NumberOfBarrier = game.NumberOfBarrier;
-        refreshEverything();
+        resetEverything();
     }
     game.changeBarrierNumber = changeBarrierNumber;
     function isDraw() {
@@ -207,10 +190,11 @@ var game;
         // space to start the game or stop the game
         if (keyCode == 32) {
             if (game.currentUpdateUI.end) {
-                refreshEverything();
+                resetEverything();
             }
             else if (game.action == null) {
                 game.action = $interval(move, game.GameSpeed);
+                game.computerAction = $interval(computerMove, game.GameSpeed);
             }
             else {
                 $interval.cancel(game.action);
@@ -218,97 +202,70 @@ var game;
             }
         }
         // up arrow
-        if (keyCode == 38) {
-            if (game.snakeOneMove == null) {
-                game.snakeOneMove = { shiftX: -1, shiftY: 0 };
+        if (game.ComputerOrHuman[0] == 1) {
+            if (keyCode == 38) {
+                if (game.snakeOneMove == null) {
+                    game.snakeOneMove = { shiftX: -1, shiftY: 0 };
+                }
+            }
+            // down arrow
+            if (keyCode == 40) {
+                if (game.snakeOneMove == null) {
+                    game.snakeOneMove = { shiftX: 1, shiftY: 0 };
+                }
+            }
+            // left arrow
+            if (keyCode == 37) {
+                if (game.snakeOneMove == null) {
+                    game.snakeOneMove = { shiftX: 0, shiftY: -1 };
+                }
+            }
+            // right arrow
+            if (keyCode == 39) {
+                if (game.snakeOneMove == null) {
+                    game.snakeOneMove = { shiftX: 0, shiftY: 1 };
+                }
             }
         }
-        // down arrow
-        if (keyCode == 40) {
-            if (game.snakeOneMove == null) {
-                game.snakeOneMove = { shiftX: 1, shiftY: 0 };
+        if (game.ComputerOrHuman[1] == 1) {
+            // w
+            if (keyCode == 87) {
+                if (game.snakeTwoMove == null) {
+                    game.snakeTwoMove = { shiftX: -1, shiftY: 0 };
+                }
             }
-        }
-        // left arrow
-        if (keyCode == 37) {
-            if (game.snakeOneMove == null) {
-                game.snakeOneMove = { shiftX: 0, shiftY: -1 };
+            // s
+            if (keyCode == 83) {
+                if (game.snakeTwoMove == null) {
+                    game.snakeTwoMove = { shiftX: 1, shiftY: 0 };
+                }
             }
-        }
-        // right arrow
-        if (keyCode == 39) {
-            if (game.snakeOneMove == null) {
-                game.snakeOneMove = { shiftX: 0, shiftY: 1 };
+            // a
+            if (keyCode == 65) {
+                if (game.snakeTwoMove == null) {
+                    game.snakeTwoMove = { shiftX: 0, shiftY: -1 };
+                }
             }
-        }
-        // w
-        if (keyCode == 87) {
-            if (game.snakeTwoMove == null) {
-                game.snakeTwoMove = { shiftX: -1, shiftY: 0 };
-            }
-        }
-        // s
-        if (keyCode == 83) {
-            if (game.snakeTwoMove == null) {
-                game.snakeTwoMove = { shiftX: 1, shiftY: 0 };
-            }
-        }
-        // a
-        if (keyCode == 65) {
-            if (game.snakeTwoMove == null) {
-                game.snakeTwoMove = { shiftX: 0, shiftY: -1 };
-            }
-        }
-        // d
-        if (keyCode == 68) {
-            if (game.snakeTwoMove == null) {
-                game.snakeTwoMove = { shiftX: 0, shiftY: 1 };
-            }
-        }
-        // y
-        if (keyCode == 89) {
-            if (game.snakeThreeMove == null) {
-                game.snakeThreeMove = { shiftX: -1, shiftY: 0 };
-            }
-        }
-        // h
-        if (keyCode == 72) {
-            if (game.snakeThreeMove == null) {
-                game.snakeThreeMove = { shiftX: 1, shiftY: 0 };
-            }
-        }
-        // g
-        if (keyCode == 71) {
-            if (game.snakeThreeMove == null) {
-                game.snakeThreeMove = { shiftX: 0, shiftY: -1 };
-            }
-        }
-        // j
-        if (keyCode == 74) {
-            if (game.snakeThreeMove == null) {
-                game.snakeThreeMove = { shiftX: 0, shiftY: 1 };
+            // d
+            if (keyCode == 68) {
+                if (game.snakeTwoMove == null) {
+                    game.snakeTwoMove = { shiftX: 0, shiftY: 1 };
+                }
             }
         }
         if (game.currentUpdateUI.stateBeforeMove) {
-            if (game.snakeOneMove != null) {
+            if (game.ComputerOrHuman[0] == 1 && game.snakeOneMove != null) {
                 var oldDirection = game.currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes[0].currentDirection;
                 if ((oldDirection.shiftX) == (game.snakeOneMove.shiftX) &&
                     (oldDirection.shiftY) == (game.snakeOneMove.shiftY)) {
                     game.snakeOneMove = null;
                 }
             }
-            if (game.snakeTwoMove != null) {
+            if (game.ComputerOrHuman[1] == 1 && game.snakeTwoMove != null) {
                 var oldDirection = game.currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes[1].currentDirection;
                 if ((oldDirection.shiftX) == (game.snakeTwoMove.shiftX) &&
                     (oldDirection.shiftY) == (game.snakeTwoMove.shiftY)) {
                     game.snakeTwoMove = null;
-                }
-            }
-            if (game.snakeThreeMove != null && game.currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes.length == 3) {
-                var oldDirection = game.currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes[2].currentDirection;
-                if ((oldDirection.shiftX) == (game.snakeThreeMove.shiftX) &&
-                    (oldDirection.shiftY) == (game.snakeThreeMove.shiftY)) {
-                    game.snakeThreeMove = null;
                 }
             }
         }

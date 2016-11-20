@@ -64,14 +64,14 @@
   </form>
 </div>
 <!--score and results-->
-<div style="margin-left: 73%; margin-top: -38%">
+<div style="margin-left: 77%; margin-top: -38%">
   <h2 style="color:green;">Time left: {{game.RemainingTime/1000 >= 0 ? game.RemainingTime/1000 : 0}}</h2>
 </div>
-<div style="margin-left: 73%;">
-  <h3 style="color:blue;">score1:{{game.getSnakeLength(0)}}</h3>
-  <h3 style="color:red;">score2:{{game.getSnakeLength(1)}}</h3>
+<div style="margin-left: 77%;">
+  <h3 style="color:blue;">score1: {{game.getSnakeLength(0)}}</h3>
+  <h3 style="color:red;">score2: {{game.getSnakeLength(1)}}</h3>
 </div>
-<div style="margin-left: 73%; margin-top: 20%">
+<div style="margin-left: 77%; margin-top: 20%">
   <h1 ng-if="game.isDraw()" style="color:black;">Draw</h1>
   <h1 ng-if="game.isFinished() && !game.isDraw()" style="color:{{game.getWinnerColor()}};">WIN!</h1>
 </div>

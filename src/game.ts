@@ -26,6 +26,7 @@ module game {
   export let animationEndedTimeout: ng.IPromise<any> = null;
   export let state: IState = null;
   export let action: any = null;
+  export let computerAction: any = null;
   export let snakeOneMove: Direction = null;
   export let snakeTwoMove: Direction = null;
   export let snakeThreeMove: Direction = null;
@@ -50,12 +51,6 @@ module game {
     state = params.move.stateAfterMove;
     if (isFirstMove()) {
       state = gameLogic.getInitialState();
-      if (isMyTurn()) makeMove(gameLogic.createInitialMove());
-    } else {
-      // We calculate the AI move only after the animation finishes,
-      // because if we call aiService now
-      // then the animation will be paused until the javascript finishes.
-      animationEndedTimeout = $timeout(animationEndedCallback, 500);
     }
   }
 
@@ -90,30 +85,8 @@ module game {
     return !currentUpdateUI.move.stateAfterMove;
   }
 
-  function yourPlayerIndex() {
-    return currentUpdateUI.yourPlayerIndex;
-  }
-
-  function isComputer() {
-    return currentUpdateUI.playersInfo[currentUpdateUI.yourPlayerIndex].playerId === '';
-  }
-
-  function isComputerTurn() {
-    return isMyTurn() && isComputer();
-  }
-
-  function isHumanTurn() {
-    return isMyTurn() && !isComputer();
-  }
-
-  function isMyTurn() {
-    return !didMakeMove && // you can only make one move per updateUI.
-      currentUpdateUI.move.turnIndexAfterMove >= 0 && // game is ongoing
-      currentUpdateUI.yourPlayerIndex === currentUpdateUI.move.turnIndexAfterMove; // it's my turn
-  }
 
   export function move(): void {
-    if (!isHumanTurn()) return;
     if (window.location.search === '?throwException') { // to test encoding a stack trace with sourcemap
       throw new Error("Throwing the error because URL has '?throwException'");
     }
@@ -134,7 +107,22 @@ module game {
     makeMove(nextMove);
   }
 
-  function refreshEverything(): void {
+  function computerMove(): void {
+    if (currentUpdateUI.move.stateAfterMove) {
+      let computerMoves:Direction[] = aiService.findComputerMove(ComputerOrHuman, currentUpdateUI.move.stateAfterMove.boardWithSnakes);
+      if (ComputerOrHuman[0] == -1) {
+        snakeOneMove = computerMoves[0];
+      }
+      if (ComputerOrHuman[1] == -1) {
+        snakeTwoMove = computerMoves[1];
+      }
+      if (ComputerOrHuman[2] == -1) {
+        snakeThreeMove = computerMoves[2];
+      }
+    }
+  }
+
+  function resetEverything(): void {
     $interval.cancel(action);
     action = null;
     RemainingTime = ALLTIME;
@@ -167,11 +155,6 @@ module game {
     return state.boardWithSnakes.board[row][col] === 'STONE';
   }
 
-  export function shouldSlowlyAppear(row: number, col: number): boolean {
-    return state.delta &&
-        state.delta.row === row && state.delta.col === col;
-  }
-
   export function getNumber(): number[] {
     let res: number[] = [];
     for (let i = 0; i < gameLogic.ROWS; i++) {
@@ -190,12 +173,12 @@ module game {
   
   export function changeFoodNumber() {
     gameLogic.NumberOfFood = NumberOfFood;
-    refreshEverything();
+    resetEverything();
   }
 
   export function changeBarrierNumber() {
     gameLogic.NumberOfBarrier = NumberOfBarrier;
-    refreshEverything();
+    resetEverything();
   }
 
   export function isDraw(): boolean {
@@ -224,9 +207,10 @@ module game {
     // space to start the game or stop the game
     if (keyCode == 32) {
       if (currentUpdateUI.end) {
-        refreshEverything();
+        resetEverything();
       } else if (action == null) {
         action = $interval(move, GameSpeed);
+        computerAction = $interval(computerMove, GameSpeed);
       } else {
         $interval.cancel(action);
         action = null;
@@ -234,97 +218,71 @@ module game {
     }
 
     // up arrow
-    if (keyCode == 38) {
-      if (snakeOneMove == null) {
-        snakeOneMove = {shiftX: -1, shiftY: 0};
+    if (ComputerOrHuman[0] == 1) {
+      if (keyCode == 38) {
+        if (snakeOneMove == null) {
+          snakeOneMove = {shiftX: -1, shiftY: 0};
+        }
+      }
+      // down arrow
+      if (keyCode == 40) {
+        if (snakeOneMove == null) {
+          snakeOneMove = {shiftX: 1, shiftY: 0};
+        }
+      }
+      // left arrow
+      if (keyCode == 37) {
+        if (snakeOneMove == null) {
+          snakeOneMove = {shiftX: 0, shiftY: -1};
+        }
+      }
+      // right arrow
+      if (keyCode == 39) {
+        if (snakeOneMove == null) {
+          snakeOneMove = {shiftX: 0, shiftY: 1};
+        }
       }
     }
-    // down arrow
-    if (keyCode == 40) {
-      if (snakeOneMove == null) {
-        snakeOneMove = {shiftX: 1, shiftY: 0};
+    if (ComputerOrHuman[1] == 1) {
+      // w
+      if (keyCode == 87) {
+        if (snakeTwoMove == null) {
+          snakeTwoMove = {shiftX: -1, shiftY: 0};
+        }
       }
-    }
-    // left arrow
-    if (keyCode == 37) {
-      if (snakeOneMove == null) {
-        snakeOneMove = {shiftX: 0, shiftY: -1};
+      // s
+      if (keyCode == 83) {
+        if (snakeTwoMove == null) {
+          snakeTwoMove = {shiftX: 1, shiftY: 0};
+        }
       }
-    }
-    // right arrow
-    if (keyCode == 39) {
-      if (snakeOneMove == null) {
-        snakeOneMove = {shiftX: 0, shiftY: 1};
+      // a
+      if (keyCode == 65) {
+        if (snakeTwoMove == null) {
+          snakeTwoMove = {shiftX: 0, shiftY: -1};
+        }
       }
-    }
-    // w
-    if (keyCode == 87) {
-      if (snakeTwoMove == null) {
-        snakeTwoMove = {shiftX: -1, shiftY: 0};
-      }
-    }
-    // s
-    if (keyCode == 83) {
-      if (snakeTwoMove == null) {
-        snakeTwoMove = {shiftX: 1, shiftY: 0};
-      }
-    }
-    // a
-    if (keyCode == 65) {
-      if (snakeTwoMove == null) {
-        snakeTwoMove = {shiftX: 0, shiftY: -1};
-      }
-    }
-    // d
-    if (keyCode == 68) {
-      if (snakeTwoMove == null) {
-        snakeTwoMove = {shiftX: 0, shiftY: 1};
-      }
-    }
-    // y
-    if (keyCode == 89) {
-      if (snakeThreeMove == null) {
-        snakeThreeMove = {shiftX: -1, shiftY: 0};
-      }
-    }
-    // h
-    if (keyCode == 72) {
-      if (snakeThreeMove == null) {
-        snakeThreeMove = {shiftX: 1, shiftY: 0};
-      }
-    }
-    // g
-    if (keyCode == 71) {
-      if (snakeThreeMove == null) {
-        snakeThreeMove = {shiftX: 0, shiftY: -1};
-      }
-    }
-    // j
-    if (keyCode == 74) {
-      if (snakeThreeMove == null) {
-        snakeThreeMove = {shiftX: 0, shiftY: 1};
+      // d
+      if (keyCode == 68) {
+        if (snakeTwoMove == null) {
+          snakeTwoMove = {shiftX: 0, shiftY: 1};
+        }
       }
     }
     if (currentUpdateUI.stateBeforeMove) {
-      if (snakeOneMove != null) {
+      if (ComputerOrHuman[0] == 1 && snakeOneMove != null) {
         let oldDirection = currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes[0].currentDirection;
         if ((oldDirection.shiftX) == (snakeOneMove.shiftX) &&
             (oldDirection.shiftY) == (snakeOneMove.shiftY)) {
           snakeOneMove = null;
         }
       }
-      if (snakeTwoMove != null) {
+
+      if (ComputerOrHuman[1] == 1 && snakeTwoMove != null) {
         let oldDirection = currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes[1].currentDirection;
         if ((oldDirection.shiftX) == (snakeTwoMove.shiftX) &&
             (oldDirection.shiftY) == (snakeTwoMove.shiftY)) {
           snakeTwoMove = null;
-        }
-      }
-      if (snakeThreeMove != null && currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes.length == 3) {
-        let oldDirection = currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes[2].currentDirection;
-        if ((oldDirection.shiftX) == (snakeThreeMove.shiftX) &&
-            (oldDirection.shiftY) == (snakeThreeMove.shiftY)) {
-          snakeThreeMove = null;
         }
       }
     }
