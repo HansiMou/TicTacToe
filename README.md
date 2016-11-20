@@ -1,13 +1,13 @@
 demo site: https://hansimou.github.io/multiplayer-snake/index.html
 
-1. If you’re using a MAC:
+- If you’re using a 
 
 If you have XCode (you don’t need to install it), run (and agree to XCode license terms):
 $ sudo xcodebuild -license
 Make sure you have Chrome installed on your computer.
 
 
-2. Install npm and NodeJS, see instructions.
+- Install npm and NodeJS, see instructions.
 
 Make sure you have at least these versions:
 `$ npm --version`
@@ -24,14 +24,14 @@ If your npm version is lower then the above versions, run:
 If your node/npm version is still lower (e.g., on windows it’s ~4), it may be fine. Continue with the instructions, and if all works, you’re good :)
 
 
-3. Fork this project:
+- Fork this project:
 
-4. Then clone it locally:
+- Then clone it locally:
 `$ git clone https://github.com/<<YOUR_GITHUB_USERNAME>>/multiplayer-snake.git`
 Go to the newly created directory, and double click on index.html to open it in the browser and play it.
 
 
-5. Install all the modules in package.json by running:
+- Install all the modules in package.json by running:
 `$ sudo npm install`
 You will see some warnings (ignore warnings, but email the group if you see errors), e.g.,
 npm WARN deprecated lodash@0.9.2: lodash@<2.0.0 is no longer maintained.
@@ -58,7 +58,7 @@ Verify you have the latest version of the compiler:
 `$ tsc --version`
 message TS6029: Version 1.7.5
 
-6. How to refactor code
+- How to refactor code
 Run this command from the root (.) directory, NOT from the src directory:
 `$ tsc --watch`
 This will run TypeScript-Compiler (tsc) and watch for changes in your ts files.
