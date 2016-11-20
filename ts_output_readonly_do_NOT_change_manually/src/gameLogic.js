@@ -2,9 +2,9 @@ var gameLogic;
 (function (gameLogic) {
     gameLogic.ROWS = 30;
     gameLogic.COLS = 30;
-    gameLogic.NumberOfBarrier = 5;
+    gameLogic.NumberOfBarrier = 15;
     gameLogic.NumberOfPlayer = 2;
-    gameLogic.NumberOfFood = 30;
+    gameLogic.NumberOfFood = 15;
     gameLogic.RemainingTime = 180 * 1000;
     function getInitialBoardAndSnakes() {
         var board = getInitialBoardWithBarriersAndFoods();
@@ -138,6 +138,7 @@ var gameLogic;
         }
         return winner;
     }
+    gameLogic.getWinner = getWinner;
     /**
      * Returns the move that should be performed when player
      * with index turnIndexBeforeMove makes a move in cell row X col.
@@ -185,7 +186,7 @@ var gameLogic;
                 }
                 // eat food
                 boardWithSnakesAfterMove.snakes[index].headToTail.unshift({ row: newHeadX, col: newHeadY });
-                if (boardWithSnakesAfterMove.board[newHeadX][newHeadY] !== 'FOOD') {
+                if ((newHeadX < 0 || newHeadX >= gameLogic.ROWS || newHeadY < 0 || newHeadY >= gameLogic.COLS) || boardWithSnakesAfterMove.board[newHeadX][newHeadY] !== 'FOOD') {
                     // remove old tail
                     boardWithSnakesAfterMove.snakes[index].oldTail = boardWithSnakesAfterMove.snakes[index].headToTail.pop();
                 }
@@ -228,7 +229,6 @@ var gameLogic;
                 }
             }
             updateBoardWithSnakes(boardWithSnakesAfterMove);
-            log.info("I'm in after", boardWithSnakesAfterMove.board[boardWithSnakesAfterMove.snakes[0].headToTail[0].row][boardWithSnakesAfterMove.snakes[0].headToTail[0].col]);
         }
         var winner = getWinner(boardWithSnakesAfterMove);
         var matchScores = [];
@@ -262,14 +262,16 @@ var gameLogic;
             }
             else {
                 // turn snake into stone
-                for (var _i = 0, _a = snake.headToTail; _i < _a.length; _i++) {
-                    var cell = _a[_i];
-                    if (boardWithSnakes.board[cell.row][cell.col] !== 'BARRIER') {
-                        boardWithSnakes.board[cell.row][cell.col] = 'STONE';
+                for (var i_1 = 1; i_1 < snake.headToTail.length; i_1++) {
+                    var cell = snake.headToTail[i_1];
+                    if (cell.row >= 0 && cell.row < gameLogic.ROWS && cell.col >= 0 && cell.col < gameLogic.COLS) {
+                        if (boardWithSnakes.board[cell.row][cell.col] !== 'BARRIER') {
+                            boardWithSnakes.board[cell.row][cell.col] = 'STONE';
+                        }
                     }
-                    if (snake.oldTail != null) {
-                        boardWithSnakes.board[snake.oldTail.row][snake.oldTail.col] = 'STONE';
-                    }
+                }
+                if (snake.oldTail != null) {
+                    boardWithSnakes.board[snake.oldTail.row][snake.oldTail.col] = 'STONE';
                 }
             }
         }

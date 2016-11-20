@@ -29,6 +29,7 @@ interface IUpdateUI extends IStateTransition {
   playersInfo: IPlayerInfo[];
   yourPlayerIndex: number;
   playMode: PlayMode;
+  end: boolean;
 }
 interface IGame {
   minNumberOfPlayers: number;

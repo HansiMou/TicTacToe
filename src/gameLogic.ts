@@ -27,10 +27,10 @@ module gameLogic {
   import all = webdriver.promise.all;
   export const ROWS = 30;
   export const COLS = 30;
-  export const NumberOfBarrier = 5;
-  export const NumberOfPlayer = 2;
-  export const NumberOfFood = 30;
-  export const RemainingTime = 180*1000;
+  export let NumberOfBarrier = 15;
+  export let NumberOfPlayer = 2;
+  export let NumberOfFood = 15;
+  export let RemainingTime = 180*1000;
 
   function getInitialBoardAndSnakes(): BoardWithSnakes {
     let board: Board = getInitialBoardWithBarriersAndFoods();
@@ -157,7 +157,7 @@ module gameLogic {
   }
 
   // return the only one player that has live snake, '', '1', '2'
-  function getWinner(boardWithSnakes: BoardWithSnakes): string {
+  export function getWinner(boardWithSnakes: BoardWithSnakes): string {
     let winner: string = '';
     let countOfLiveSnake: number = 0;
 
@@ -223,7 +223,7 @@ module gameLogic {
 
         // eat food
         boardWithSnakesAfterMove.snakes[index].headToTail.unshift({row: newHeadX, col: newHeadY});
-        if (boardWithSnakesAfterMove.board[newHeadX][newHeadY] !== 'FOOD') {
+        if ((newHeadX < 0 || newHeadX >= ROWS || newHeadY < 0 || newHeadY >= COLS) || boardWithSnakesAfterMove.board[newHeadX][newHeadY] !== 'FOOD') {
           // remove old tail
           boardWithSnakesAfterMove.snakes[index].oldTail = boardWithSnakesAfterMove.snakes[index].headToTail.pop();
         }
@@ -268,9 +268,6 @@ module gameLogic {
       }
 
       updateBoardWithSnakes(boardWithSnakesAfterMove);
-      log.info("I'm in after", boardWithSnakesAfterMove.board
-          [boardWithSnakesAfterMove.snakes[0].headToTail[0].row]
-          [boardWithSnakesAfterMove.snakes[0].headToTail[0].col]);
     }
 
     let winner = getWinner(boardWithSnakesAfterMove);
@@ -303,13 +300,17 @@ module gameLogic {
         log.info("I'm in new head", snake.headToTail[0].row, snake.headToTail[0].col, boardWithSnakes.board[snake.headToTail[0].row][snake.headToTail[0].col]);
       } else {
         // turn snake into stone
-        for (let cell of snake.headToTail) {
-          if (boardWithSnakes.board[cell.row][cell.col] !== 'BARRIER') {
-            boardWithSnakes.board[cell.row][cell.col] = 'STONE';
+
+        for (let i = 1; i < snake.headToTail.length; i++) {
+          let cell = snake.headToTail[i];
+          if (cell.row >= 0 && cell.row < ROWS && cell.col >= 0 && cell.col < COLS) {
+            if (boardWithSnakes.board[cell.row][cell.col] !== 'BARRIER') {
+              boardWithSnakes.board[cell.row][cell.col] = 'STONE';
+            }
           }
-          if (snake.oldTail != null) {
-            boardWithSnakes.board[snake.oldTail.row][snake.oldTail.col] = 'STONE';
-          }
+        }
+        if (snake.oldTail != null) {
+          boardWithSnakes.board[snake.oldTail.row][snake.oldTail.col] = 'STONE';
         }
       }
     }

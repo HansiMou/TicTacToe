@@ -14,17 +14,23 @@ module game {
   // I export all variables to make it easy to debug in the browser by
   // simply typing in the console, e.g.,
   // game.currentUpdateUI
+  export const ALLTIME = 120*1000;
+  export const GameSpeed = 500;
+  export const BoardSize = gameLogic.ROWS;
+  export const ComputerOrHuman = [1, 1];
+  export const NumberOfFood = gameLogic.NumberOfFood;
+  export const NumberOfBarrier = gameLogic.NumberOfBarrier;
+
   export let currentUpdateUI: IUpdateUI = null;
   export let didMakeMove: boolean = false; // You can only make one move per updateUI
   export let animationEndedTimeout: ng.IPromise<any> = null;
   export let state: IState = null;
-  export const boardSize = gameLogic.ROWS;
-  export const gameSpeed = 1000;
   export let action: any = null;
   export let snakeOneMove: Direction = null;
   export let snakeTwoMove: Direction = null;
   export let snakeThreeMove: Direction = null;
-  
+  export let RemainingTime = ALLTIME;
+
   
   export function init() {
     resizeGameAreaService.setWidthToHeight(1);
@@ -34,7 +40,6 @@ module game {
       updateUI: updateUI,
       gotMessageFromPlatform: null,
     });
-    action = $interval(move, 500);
   }
 
   export function updateUI(params: IUpdateUI): void {
@@ -115,17 +120,27 @@ module game {
     let nextMove: IMove = null;
     try {
       nextMove = gameLogic.createMove(
-          state, [angular.copy(snakeOneMove), angular.copy(snakeTwoMove)], 100000, currentUpdateUI.move.turnIndexAfterMove);
+          state, [angular.copy(snakeOneMove), angular.copy(snakeTwoMove)], RemainingTime-=GameSpeed, currentUpdateUI.move.turnIndexAfterMove);
       snakeOneMove = null;
       snakeTwoMove = null;
       snakeThreeMove = null;
     } catch (e) {
       $interval.cancel(action);
+      currentUpdateUI.end = true;
       log.error(e);
       return;
     }
     // Move is legal, make it!
     makeMove(nextMove);
+  }
+
+  function refreshEverything(): void {
+    $interval.cancel(action);
+    action = null;
+    RemainingTime = ALLTIME;
+    currentUpdateUI.move.stateAfterMove = null;
+    currentUpdateUI.end = false;
+    updateUI(currentUpdateUI);
   }
 
   export function isFood(row: number, col: number): boolean {
@@ -139,6 +154,7 @@ module game {
   export function isSnakeOne(row: number, col: number): boolean {
     return state.boardWithSnakes.board[row][col] === 'SNAKE1';
   }
+  
   export function isSnakeTwo(row: number, col: number): boolean {
     return state.boardWithSnakes.board[row][col] === 'SNAKE2';
   }
@@ -163,8 +179,60 @@ module game {
     }
     return res;
   }
+  
+  export function getSnakeLength(index: number): number {
+    if (isFirstMove()) {
+      return 1;
+    } else {
+      return currentUpdateUI.move.stateAfterMove.boardWithSnakes.snakes[index].headToTail.length;
+    }
+  }
+  
+  export function changeFoodNumber() {
+    gameLogic.NumberOfFood = NumberOfFood;
+    refreshEverything();
+  }
+
+  export function changeBarrierNumber() {
+    gameLogic.NumberOfBarrier = NumberOfBarrier;
+    refreshEverything();
+  }
+
+  export function isDraw(): boolean {
+    if (currentUpdateUI.end == true) {
+      return gameLogic.getWinner(currentUpdateUI.move.stateAfterMove.boardWithSnakes) === '';
+    }
+    return false;
+  }
+
+  export function isFinished(): boolean {
+    return currentUpdateUI.end;
+  }
+
+  export function getWinnerColor(): string {
+    let winner = gameLogic.getWinner(currentUpdateUI.move.stateAfterMove.boardWithSnakes);
+    if (winner === '1') {
+      return 'blue';
+    } else if (winner === '2') {
+      return 'red';
+    } else {
+      return 'yellow';
+    }
+  }
 
   export function keyDown(keyCode: any): void {
+    // space to start the game or stop the game
+    if (keyCode == 32) {
+      if (currentUpdateUI.end) {
+        refreshEverything();
+      } else if (action == null) {
+        action = $interval(move, GameSpeed);
+      } else {
+        $interval.cancel(action);
+        action = null;
+      }
+    }
+
     // up arrow
     if (keyCode == 38) {
       if (snakeOneMove == null) {
@@ -237,25 +305,27 @@ module game {
         snakeThreeMove = {shiftX: 0, shiftY: 1};
       }
     }
-    if (snakeOneMove != null) {
-      let oldDirection = currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes[0].currentDirection;
-      if ((oldDirection.shiftX) == (snakeOneMove.shiftX) &&
-        (oldDirection.shiftY) == (snakeOneMove.shiftY)) {
-        snakeOneMove = null;
+    if (currentUpdateUI.stateBeforeMove) {
+      if (snakeOneMove != null) {
+        let oldDirection = currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes[0].currentDirection;
+        if ((oldDirection.shiftX) == (snakeOneMove.shiftX) &&
+            (oldDirection.shiftY) == (snakeOneMove.shiftY)) {
+          snakeOneMove = null;
+        }
       }
-    }
-    if (snakeTwoMove != null) {
-      let oldDirection = currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes[1].currentDirection;
-      if ((oldDirection.shiftX) == (snakeTwoMove.shiftX) &&
-          (oldDirection.shiftY) == (snakeTwoMove.shiftY)) {
-        snakeTwoMove = null;
+      if (snakeTwoMove != null) {
+        let oldDirection = currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes[1].currentDirection;
+        if ((oldDirection.shiftX) == (snakeTwoMove.shiftX) &&
+            (oldDirection.shiftY) == (snakeTwoMove.shiftY)) {
+          snakeTwoMove = null;
+        }
       }
-    }
-    if (snakeThreeMove != null && currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes.length == 3) {
-      let oldDirection = currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes[2].currentDirection;
-      if ((oldDirection.shiftX) == (snakeThreeMove.shiftX) &&
-          (oldDirection.shiftY) == (snakeThreeMove.shiftY)) {
-        snakeThreeMove = null;
+      if (snakeThreeMove != null && currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes.length == 3) {
+        let oldDirection = currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes[2].currentDirection;
+        if ((oldDirection.shiftX) == (snakeThreeMove.shiftX) &&
+            (oldDirection.shiftY) == (snakeThreeMove.shiftY)) {
+          snakeThreeMove = null;
+        }
       }
     }
   }

@@ -5,16 +5,21 @@ var game;
     // I export all variables to make it easy to debug in the browser by
     // simply typing in the console, e.g.,
     // game.currentUpdateUI
+    game.ALLTIME = 120 * 1000;
+    game.GameSpeed = 500;
+    game.BoardSize = gameLogic.ROWS;
+    game.ComputerOrHuman = [1, 1];
+    game.NumberOfFood = gameLogic.NumberOfFood;
+    game.NumberOfBarrier = gameLogic.NumberOfBarrier;
     game.currentUpdateUI = null;
     game.didMakeMove = false; // You can only make one move per updateUI
     game.animationEndedTimeout = null;
     game.state = null;
-    game.boardSize = gameLogic.ROWS;
-    game.gameSpeed = 1000;
     game.action = null;
     game.snakeOneMove = null;
     game.snakeTwoMove = null;
     game.snakeThreeMove = null;
+    game.RemainingTime = game.ALLTIME;
     function init() {
         resizeGameAreaService.setWidthToHeight(1);
         moveService.setGame({
@@ -23,7 +28,6 @@ var game;
             updateUI: updateUI,
             gotMessageFromPlatform: null,
         });
-        game.action = $interval(move, 500);
     }
     game.init = init;
     function updateUI(params) {
@@ -96,13 +100,14 @@ var game;
         }
         var nextMove = null;
         try {
-            nextMove = gameLogic.createMove(game.state, [angular.copy(game.snakeOneMove), angular.copy(game.snakeTwoMove)], 100000, game.currentUpdateUI.move.turnIndexAfterMove);
+            nextMove = gameLogic.createMove(game.state, [angular.copy(game.snakeOneMove), angular.copy(game.snakeTwoMove)], game.RemainingTime -= game.GameSpeed, game.currentUpdateUI.move.turnIndexAfterMove);
             game.snakeOneMove = null;
             game.snakeTwoMove = null;
             game.snakeThreeMove = null;
         }
         catch (e) {
             $interval.cancel(game.action);
+            game.currentUpdateUI.end = true;
             log.error(e);
             return;
         }
@@ -110,6 +115,14 @@ var game;
         makeMove(nextMove);
     }
     game.move = move;
+    function refreshEverything() {
+        $interval.cancel(game.action);
+        game.action = null;
+        game.RemainingTime = game.ALLTIME;
+        game.currentUpdateUI.move.stateAfterMove = null;
+        game.currentUpdateUI.end = false;
+        updateUI(game.currentUpdateUI);
+    }
     function isFood(row, col) {
         return game.state.boardWithSnakes.board[row][col] === 'FOOD';
     }
@@ -147,7 +160,63 @@ var game;
         return res;
     }
     game.getNumber = getNumber;
+    function getSnakeLength(index) {
+        if (isFirstMove()) {
+            return 1;
+        }
+        else {
+            return game.currentUpdateUI.move.stateAfterMove.boardWithSnakes.snakes[index].headToTail.length;
+        }
+    }
+    game.getSnakeLength = getSnakeLength;
+    function changeFoodNumber() {
+        gameLogic.NumberOfFood = game.NumberOfFood;
+        refreshEverything();
+    }
+    game.changeFoodNumber = changeFoodNumber;
+    function changeBarrierNumber() {
+        gameLogic.NumberOfBarrier = game.NumberOfBarrier;
+        refreshEverything();
+    }
+    game.changeBarrierNumber = changeBarrierNumber;
+    function isDraw() {
+        if (game.currentUpdateUI.end == true) {
+            return gameLogic.getWinner(game.currentUpdateUI.move.stateAfterMove.boardWithSnakes) === '';
+        }
+        return false;
+    }
+    game.isDraw = isDraw;
+    function isFinished() {
+        return game.currentUpdateUI.end;
+    }
+    game.isFinished = isFinished;
+    function getWinnerColor() {
+        var winner = gameLogic.getWinner(game.currentUpdateUI.move.stateAfterMove.boardWithSnakes);
+        if (winner === '1') {
+            return 'blue';
+        }
+        else if (winner === '2') {
+            return 'red';
+        }
+        else {
+            return 'yellow';
+        }
+    }
+    game.getWinnerColor = getWinnerColor;
     function keyDown(keyCode) {
+        // space to start the game or stop the game
+        if (keyCode == 32) {
+            if (game.currentUpdateUI.end) {
+                refreshEverything();
+            }
+            else if (game.action == null) {
+                game.action = $interval(move, game.GameSpeed);
+            }
+            else {
+                $interval.cancel(game.action);
+                game.action = null;
+            }
+        }
         // up arrow
         if (keyCode == 38) {
             if (game.snakeOneMove == null) {
@@ -220,25 +289,27 @@ var game;
                 game.snakeThreeMove = { shiftX: 0, shiftY: 1 };
             }
         }
-        if (game.snakeOneMove != null) {
-            var oldDirection = game.currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes[0].currentDirection;
-            if ((oldDirection.shiftX) == (game.snakeOneMove.shiftX) &&
-                (oldDirection.shiftY) == (game.snakeOneMove.shiftY)) {
-                game.snakeOneMove = null;
+        if (game.currentUpdateUI.stateBeforeMove) {
+            if (game.snakeOneMove != null) {
+                var oldDirection = game.currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes[0].currentDirection;
+                if ((oldDirection.shiftX) == (game.snakeOneMove.shiftX) &&
+                    (oldDirection.shiftY) == (game.snakeOneMove.shiftY)) {
+                    game.snakeOneMove = null;
+                }
             }
-        }
-        if (game.snakeTwoMove != null) {
-            var oldDirection = game.currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes[1].currentDirection;
-            if ((oldDirection.shiftX) == (game.snakeTwoMove.shiftX) &&
-                (oldDirection.shiftY) == (game.snakeTwoMove.shiftY)) {
-                game.snakeTwoMove = null;
+            if (game.snakeTwoMove != null) {
+                var oldDirection = game.currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes[1].currentDirection;
+                if ((oldDirection.shiftX) == (game.snakeTwoMove.shiftX) &&
+                    (oldDirection.shiftY) == (game.snakeTwoMove.shiftY)) {
+                    game.snakeTwoMove = null;
+                }
             }
-        }
-        if (game.snakeThreeMove != null && game.currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes.length == 3) {
-            var oldDirection = game.currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes[2].currentDirection;
-            if ((oldDirection.shiftX) == (game.snakeThreeMove.shiftX) &&
-                (oldDirection.shiftY) == (game.snakeThreeMove.shiftY)) {
-                game.snakeThreeMove = null;
+            if (game.snakeThreeMove != null && game.currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes.length == 3) {
+                var oldDirection = game.currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes[2].currentDirection;
+                if ((oldDirection.shiftX) == (game.snakeThreeMove.shiftX) &&
+                    (oldDirection.shiftY) == (game.snakeThreeMove.shiftY)) {
+                    game.snakeThreeMove = null;
+                }
             }
         }
     }

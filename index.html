@@ -8,7 +8,6 @@
   <title>multiplayer-snake</title>
   <meta name="description" content="snake game">
   <link rel="shortcut icon" type="image/x-icon" href="data:image/x-icon;,"><!-- Suppress browser request for favicon.ico -->
-
   <!-- To ensure CSS files are downloaded in parallel, always include external CSS before external JavaScript. -->
   <!-- build:[href] css/everything.min.css -->
   <link rel="stylesheet" type="text/css" href="css/game.css">
@@ -23,17 +22,67 @@
   <!-- /build -->
 </head>
 <body ng-cloak ng-keydown="game.keyDown($event.keyCode)">
+<!--instruction and adapter-->
+<div style="margin-top: 10%;margin-left: 3%">
+  <h4>Instructions</h4>
+  <ul>
+    <li><h5>Press 'space' to start or stop the game</h5></li>
+  </ul>
+
+  <h4 style="color:blue;">Player 1: &uarr; &darr; &larr; &rarr; </h4>
+  <form>
+    <label><input ng-model="game.ComputerOrHuman[0]" type="radio" value="1">human</label>
+    <label><input ng-model="game.ComputerOrHuman[0]" type="radio" value="-1">computer</label>
+  </form>
+
+  <h4 style="color:red;">Player 2: w, a, s, d</h4>
+  <form>
+    <label><input ng-model="game.ComputerOrHuman[1]" type="radio" value="1">human</label>
+    <label><input ng-model="game.ComputerOrHuman[1]" type="radio" value="-1">computer</label>
+  </form>
+
+  <h4>Game speed</h4>
+  <form>
+    <label><input ng-model="game.GameSpeed" type="radio" value="700">slow</label>
+    <label><input ng-model="game.GameSpeed" type="radio" value="500">normal</label>
+    <label><input ng-model="game.GameSpeed" type="radio" value="200">fast</label>
+    <label><input ng-model="game.GameSpeed" type="radio" value="70">hardcore</label>
+  </form>
+  <h4>Food</h4>
+  <form>
+    <label><input ng-model="game.NumberOfFood" ng-change="game.changeFoodNumber()" type="radio" value="5">few</label>
+    <label><input ng-model="game.NumberOfFood" ng-change="game.changeFoodNumber()" type="radio" value="15">normal</label>
+    <label><input ng-model="game.NumberOfFood" ng-change="game.changeFoodNumber()" type="radio" value="45">plenty</label>
+    <label><input ng-model="game.NumberOfFood" ng-change="game.changeFoodNumber()" type="radio" value="100">harvest</label>
+  </form>
+  <h4>Obstacle</h4>
+  <form>
+    <label><input ng-model="game.NumberOfBarrier" ng-change="game.changeBarrierNumber()" type="radio" value="5">few</label>
+    <label><input ng-model="game.NumberOfBarrier" ng-change="game.changeBarrierNumber()" type="radio" value="15">normal</label>
+    <label><input ng-model="game.NumberOfBarrier" ng-change="game.changeBarrierNumber()" type="radio" value="45">plenty</label>
+    <label><input ng-model="game.NumberOfBarrier" ng-change="game.changeBarrierNumber()" type="radio" value="100">crazy</label>
+  </form>
+</div>
+<!--score and results-->
+<div style="margin-left: 73%; margin-top: -38%">
+  <h2 style="color:green;">Time left: {{game.RemainingTime/1000 >= 0 ? game.RemainingTime/1000 : 0}}</h2>
+</div>
+<div style="margin-left: 73%;">
+  <h3 style="color:blue;">score1:{{game.getSnakeLength(0)}}</h3>
+  <h3 style="color:red;">score2:{{game.getSnakeLength(1)}}</h3>
+</div>
+<div style="margin-left: 73%; margin-top: 20%">
+  <h1 ng-if="game.isDraw()" style="color:black;">Draw</h1>
+  <h1 ng-if="game.isFinished() && !game.isDraw()" style="color:{{game.getWinnerColor()}};">WIN!</h1>
+</div>
 <div id="gameArea">
-  <div style="margin-left: 60%;">
-    TODO: Adapters
-  </div>
   <div ng-repeat="row in game.getNumber()"
-      style="position:absolute; top:{{20+row*80/game.boardSize}}%; right: 30%; width:100%; height:{{80/game.boardSize}}%;">
+       style="position:absolute; top:{{20+row*80/game.BoardSize}}%; width:100%; height:{{80/game.BoardSize}}%;">
     <div ng-repeat="col in game.getNumber()"
-        style="position:absolute; top:0; left:{{col*80/game.boardSize}}%; width:{{80/game.boardSize}}%; height:100%;"
-        ng-class="{t: row < 1, l: col < 1, r: col < 30, b: row < 30}"
-        id="{{'e2e_test_div_' + row + 'x' + col}}">
-      <div style="width:100%; height: 100%">
+         style="position:absolute; top:0; left:{{10+col*80/game.BoardSize}}%; width:{{80/game.BoardSize}}%; height:100%;"
+         ng-class="{t: row < 1, l: col < 1, r: col < 30, b: row < 30}"
+         id="{{'e2e_test_div_' + row + 'x' + col}}">
+     <div style="width:100%; height: 100%">
           <!--ng-class="{slowlyAppear: game.shouldSlowlyAppear(row, col)}"-->
         <svg ng-if="game.isFood(row, col)"
             id="{{'e2e_test_pieceO_' + row + 'x' + col}}"
@@ -77,6 +126,5 @@
     </div>
   </div>
 </div>
-
 </body>
 </html>
