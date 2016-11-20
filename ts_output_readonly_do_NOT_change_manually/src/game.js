@@ -11,6 +11,7 @@ var game;
     game.ComputerOrHuman = [1, 1];
     game.NumberOfFood = gameLogic.NumberOfFood;
     game.NumberOfBarrier = gameLogic.NumberOfBarrier;
+    game.ThirdComputerPlayer = false;
     game.currentUpdateUI = null;
     game.didMakeMove = false; // You can only make one move per updateUI
     game.animationEndedTimeout = null;
@@ -21,6 +22,7 @@ var game;
     game.snakeTwoMove = null;
     game.snakeThreeMove = null;
     game.RemainingTime = game.ALLTIME;
+    game.reset = true;
     function init() {
         resizeGameAreaService.setWidthToHeight(1);
         moveService.setGame({
@@ -35,30 +37,14 @@ var game;
         log.info("Game got updateUI:", params);
         game.didMakeMove = false; // Only one move per updateUI
         game.currentUpdateUI = params;
-        clearAnimationTimeout();
         game.state = params.move.stateAfterMove;
         if (isFirstMove()) {
             game.state = gameLogic.getInitialState();
         }
     }
     game.updateUI = updateUI;
-    function animationEndedCallback() {
-        log.info("Animation ended");
-        maybeSendComputerMove();
-    }
-    function clearAnimationTimeout() {
-        if (game.animationEndedTimeout) {
-            $timeout.cancel(game.animationEndedTimeout);
-            game.animationEndedTimeout = null;
-        }
-    }
-    function maybeSendComputerMove() {
-        // if (!isComputerTurn()) return;
-        // let move = aiService.findComputerMove(currentUpdateUI.move);
-        // log.info("Computer move: ", move);
-        // makeMove(move);
-    }
     function makeMove(move) {
+        game.reset = false;
         if (game.didMakeMove) {
             return;
         }
@@ -74,7 +60,11 @@ var game;
         }
         var nextMove = null;
         try {
-            nextMove = gameLogic.createMove(game.state, [angular.copy(game.snakeOneMove), angular.copy(game.snakeTwoMove)], game.RemainingTime -= game.GameSpeed, game.currentUpdateUI.move.turnIndexAfterMove);
+            var tmpMove = [angular.copy(game.snakeOneMove), angular.copy(game.snakeTwoMove)];
+            if (game.ThirdComputerPlayer) {
+                tmpMove.push(angular.copy(game.snakeThreeMove));
+            }
+            nextMove = gameLogic.createMove(game.state, tmpMove, game.RemainingTime -= game.GameSpeed, game.currentUpdateUI.move.turnIndexAfterMove);
             game.snakeOneMove = null;
             game.snakeTwoMove = null;
             game.snakeThreeMove = null;
@@ -107,6 +97,7 @@ var game;
         $interval.cancel(game.action);
         game.action = null;
         game.RemainingTime = game.ALLTIME;
+        game.reset = true;
         game.currentUpdateUI.move.stateAfterMove = null;
         game.currentUpdateUI.end = false;
         updateUI(game.currentUpdateUI);
@@ -162,6 +153,18 @@ var game;
         resetEverything();
     }
     game.changeBarrierNumber = changeBarrierNumber;
+    function changePlayerNumber() {
+        if (game.ThirdComputerPlayer) {
+            game.ComputerOrHuman.push(-1);
+            gameLogic.NumberOfPlayer = 3;
+        }
+        else {
+            game.ComputerOrHuman.pop();
+            gameLogic.NumberOfPlayer = 2;
+        }
+        resetEverything();
+    }
+    game.changePlayerNumber = changePlayerNumber;
     function isDraw() {
         if (game.currentUpdateUI.end == true) {
             return gameLogic.getWinner(game.currentUpdateUI.move.stateAfterMove.boardWithSnakes) === '';
@@ -182,13 +185,31 @@ var game;
             return 'red';
         }
         else {
-            return 'yellow';
+            return 'orange';
         }
     }
     game.getWinnerColor = getWinnerColor;
+    function shouldSlowlyAppear(row, col) {
+        if (isFirstMove() || !game.currentUpdateUI.stateBeforeMove || game.reset) {
+            return true;
+        }
+        return false;
+    }
+    game.shouldSlowlyAppear = shouldSlowlyAppear;
+    function shouldSlowlyDisappear(row, col) {
+        // if (!isFirstMove() && currentUpdateUI.stateBeforeMove && currentUpdateUI.move) {
+        //   if (currentUpdateUI.stateBeforeMove.boardWithSnakes.board[row][col] !== '' &&
+        //       currentUpdateUI.move.stateAfterMove.boardWithSnakes.board[row][col] === '') {
+        //     log.error("true");
+        //     return true;
+        //   }
+        // }
+        return false;
+    }
+    game.shouldSlowlyDisappear = shouldSlowlyDisappear;
     function keyDown(keyCode) {
-        // space to start the game or stop the game
-        if (keyCode == 32) {
+        // Enter to start the game or stop the game
+        if (keyCode == 13) {
             if (game.currentUpdateUI.end) {
                 resetEverything();
             }

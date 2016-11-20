@@ -20,6 +20,7 @@ module game {
   export const ComputerOrHuman = [1, 1];
   export const NumberOfFood = gameLogic.NumberOfFood;
   export const NumberOfBarrier = gameLogic.NumberOfBarrier;
+  export const ThirdComputerPlayer = false;
 
   export let currentUpdateUI: IUpdateUI = null;
   export let didMakeMove: boolean = false; // You can only make one move per updateUI
@@ -31,8 +32,8 @@ module game {
   export let snakeTwoMove: Direction = null;
   export let snakeThreeMove: Direction = null;
   export let RemainingTime = ALLTIME;
+  export let reset = true;
 
-  
   export function init() {
     resizeGameAreaService.setWidthToHeight(1);
     moveService.setGame({
@@ -47,33 +48,14 @@ module game {
     log.info("Game got updateUI:", params);
     didMakeMove = false; // Only one move per updateUI
     currentUpdateUI = params;
-    clearAnimationTimeout();
     state = params.move.stateAfterMove;
     if (isFirstMove()) {
       state = gameLogic.getInitialState();
     }
   }
 
-  function animationEndedCallback() {
-    log.info("Animation ended");
-    maybeSendComputerMove();
-  }
-
-  function clearAnimationTimeout() {
-    if (animationEndedTimeout) {
-      $timeout.cancel(animationEndedTimeout);
-      animationEndedTimeout = null;
-    }
-  }
-
-  function maybeSendComputerMove() {
-    // if (!isComputerTurn()) return;
-    // let move = aiService.findComputerMove(currentUpdateUI.move);
-    // log.info("Computer move: ", move);
-    // makeMove(move);
-  }
-
   function makeMove(move: IMove) {
+    reset = false;
     if (didMakeMove) { // Only one move per updateUI
       return;
     }
@@ -85,15 +67,18 @@ module game {
     return !currentUpdateUI.move.stateAfterMove;
   }
 
-
   export function move(): void {
     if (window.location.search === '?throwException') { // to test encoding a stack trace with sourcemap
       throw new Error("Throwing the error because URL has '?throwException'");
     }
     let nextMove: IMove = null;
     try {
+      let tmpMove = [angular.copy(snakeOneMove), angular.copy(snakeTwoMove)];
+      if (ThirdComputerPlayer) {
+        tmpMove.push(angular.copy(snakeThreeMove));
+      }
       nextMove = gameLogic.createMove(
-          state, [angular.copy(snakeOneMove), angular.copy(snakeTwoMove)], RemainingTime-=GameSpeed, currentUpdateUI.move.turnIndexAfterMove);
+          state, tmpMove, RemainingTime-=GameSpeed, currentUpdateUI.move.turnIndexAfterMove);
       snakeOneMove = null;
       snakeTwoMove = null;
       snakeThreeMove = null;
@@ -126,6 +111,7 @@ module game {
     $interval.cancel(action);
     action = null;
     RemainingTime = ALLTIME;
+    reset = true;
     currentUpdateUI.move.stateAfterMove = null;
     currentUpdateUI.end = false;
     updateUI(currentUpdateUI);
@@ -181,6 +167,17 @@ module game {
     resetEverything();
   }
 
+  export function changePlayerNumber() {
+    if (ThirdComputerPlayer) {
+      ComputerOrHuman.push(-1);
+      gameLogic.NumberOfPlayer = 3;
+    } else {
+      ComputerOrHuman.pop();
+      gameLogic.NumberOfPlayer = 2;
+    }
+    resetEverything();
+  }
+
   export function isDraw(): boolean {
     if (currentUpdateUI.end == true) {
       return gameLogic.getWinner(currentUpdateUI.move.stateAfterMove.boardWithSnakes) === '';
@@ -199,13 +196,31 @@ module game {
     } else if (winner === '2') {
       return 'red';
     } else {
-      return 'yellow';
+      return 'orange';
     }
   }
 
+  export function shouldSlowlyAppear(row: number, col: number): boolean {
+    if (isFirstMove() || !currentUpdateUI.stateBeforeMove || reset) {
+      return true;
+    }
+    return false;
+  }
+
+  export function shouldSlowlyDisappear(row: number, col: number): boolean {
+    // if (!isFirstMove() && currentUpdateUI.stateBeforeMove && currentUpdateUI.move) {
+    //   if (currentUpdateUI.stateBeforeMove.boardWithSnakes.board[row][col] !== '' &&
+    //       currentUpdateUI.move.stateAfterMove.boardWithSnakes.board[row][col] === '') {
+    //     log.error("true");
+    //     return true;
+    //   }
+    // }
+    return false;
+  }
+
   export function keyDown(keyCode: any): void {
-    // space to start the game or stop the game
-    if (keyCode == 32) {
+    // Enter to start the game or stop the game
+    if (keyCode == 13) {
       if (currentUpdateUI.end) {
         resetEverything();
       } else if (action == null) {
