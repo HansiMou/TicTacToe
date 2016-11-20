@@ -1,6 +1,6 @@
 demo site: https://hansimou.github.io/multiplayer-snake/index.html
 
-- If you’re using a 
+- If you’re using a Mac
 
 If you have XCode (you don’t need to install it), run (and agree to XCode license terms):
 $ sudo xcodebuild -license
