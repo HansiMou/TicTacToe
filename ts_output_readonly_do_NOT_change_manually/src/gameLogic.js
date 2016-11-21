@@ -290,7 +290,7 @@ var gameLogic;
         }
     }
     function createInitialMove() {
-        return { matchScores: [], stateAfterMove: getInitialState(), end: false, turnIndexAfterMove: 0 };
+        return { stateAfterMove: getInitialState(), end: false, turnIndexAfterMove: 0 };
     }
     gameLogic.createInitialMove = createInitialMove;
     function checkMoveOk(stateTransition) {

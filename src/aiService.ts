@@ -3,7 +3,7 @@ module aiService {
   export function findComputerMove(computerOrHuman: number[], boardWithSnake: BoardWithSnakes): Direction[] {
     let res: Direction[] = [];
     for (let i = 0; i < computerOrHuman.length; i++) {
-      if (computerOrHuman[i] == 1) {
+      if (computerOrHuman[i] == 1 || boardWithSnake.snakes[i].dead) {
         res.push(null);
       }
       else {

@@ -177,7 +177,7 @@ module gameLogic {
    * with index turnIndexBeforeMove makes a move in cell row X col.
    */
   export function createMove(
-      stateBeforeMove: IState, newDirections: Direction[], leftTime: number, turnIndexBeforeMove): IMove {
+      stateBeforeMove: IState, newDirections: Direction[], leftTime: number, turnIndexBeforeMove: number): IMove {
     let end: boolean = false;
     if (!stateBeforeMove) {
       stateBeforeMove = getInitialState();
@@ -331,7 +331,7 @@ module gameLogic {
   }
   
   export function createInitialMove(): IMove {
-    return {matchScores: [], stateAfterMove: getInitialState(), end: false, turnIndexAfterMove: 0};
+    return {stateAfterMove: getInitialState(), end: false, turnIndexAfterMove: 0};
   }
 
   export function checkMoveOk(stateTransition: IStateTransition): void {
