@@ -17,7 +17,7 @@ module game {
   export const ALLTIME = 120*1000;
   export const GameSpeed = 500;
   export const BoardSize = gameLogic.ROWS;
-  export const ComputerOrHuman = [1, 1];
+  export const ComputerOrHuman = [1, -1];
   export const NumberOfFood = gameLogic.NumberOfFood;
   export const NumberOfBarrier = gameLogic.NumberOfBarrier;
   export const ThirdComputerPlayer = false;
@@ -71,6 +71,7 @@ module game {
     if (window.location.search === '?throwException') { // to test encoding a stack trace with sourcemap
       throw new Error("Throwing the error because URL has '?throwException'");
     }
+    computerMove()
     let nextMove: IMove = null;
     try {
       let tmpMove = [angular.copy(snakeOneMove), angular.copy(snakeTwoMove)];
@@ -93,8 +94,7 @@ module game {
   }
 
   function computerMove(): void {
-    if (currentUpdateUI.move.stateAfterMove) {
-      let computerMoves:Direction[] = aiService.findComputerMove(ComputerOrHuman, currentUpdateUI.move.stateAfterMove.boardWithSnakes);
+      let computerMoves:Direction[] = aiService.findComputerMove(ComputerOrHuman, state.boardWithSnakes);
       if (ComputerOrHuman[0] == -1) {
         snakeOneMove = computerMoves[0];
       }
@@ -104,7 +104,6 @@ module game {
       if (ComputerOrHuman[2] == -1) {
         snakeThreeMove = computerMoves[2];
       }
-    }
   }
 
   function resetEverything(): void {
@@ -225,15 +224,14 @@ module game {
         resetEverything();
       } else if (action == null) {
         action = $interval(move, GameSpeed);
-        computerAction = $interval(computerMove, GameSpeed);
       } else {
         $interval.cancel(action);
         action = null;
       }
     }
 
-    // up arrow
     if (ComputerOrHuman[0] == 1) {
+      // up arrow
       if (keyCode == 38) {
         if (snakeOneMove == null) {
           snakeOneMove = {shiftX: -1, shiftY: 0};

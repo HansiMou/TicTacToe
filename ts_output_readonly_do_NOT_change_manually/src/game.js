@@ -8,7 +8,7 @@ var game;
     game.ALLTIME = 120 * 1000;
     game.GameSpeed = 500;
     game.BoardSize = gameLogic.ROWS;
-    game.ComputerOrHuman = [1, 1];
+    game.ComputerOrHuman = [1, -1];
     game.NumberOfFood = gameLogic.NumberOfFood;
     game.NumberOfBarrier = gameLogic.NumberOfBarrier;
     game.ThirdComputerPlayer = false;
@@ -58,6 +58,7 @@ var game;
         if (window.location.search === '?throwException') {
             throw new Error("Throwing the error because URL has '?throwException'");
         }
+        computerMove();
         var nextMove = null;
         try {
             var tmpMove = [angular.copy(game.snakeOneMove), angular.copy(game.snakeTwoMove)];
@@ -80,17 +81,15 @@ var game;
     }
     game.move = move;
     function computerMove() {
-        if (game.currentUpdateUI.move.stateAfterMove) {
-            var computerMoves = aiService.findComputerMove(game.ComputerOrHuman, game.currentUpdateUI.move.stateAfterMove.boardWithSnakes);
-            if (game.ComputerOrHuman[0] == -1) {
-                game.snakeOneMove = computerMoves[0];
-            }
-            if (game.ComputerOrHuman[1] == -1) {
-                game.snakeTwoMove = computerMoves[1];
-            }
-            if (game.ComputerOrHuman[2] == -1) {
-                game.snakeThreeMove = computerMoves[2];
-            }
+        var computerMoves = aiService.findComputerMove(game.ComputerOrHuman, game.state.boardWithSnakes);
+        if (game.ComputerOrHuman[0] == -1) {
+            game.snakeOneMove = computerMoves[0];
+        }
+        if (game.ComputerOrHuman[1] == -1) {
+            game.snakeTwoMove = computerMoves[1];
+        }
+        if (game.ComputerOrHuman[2] == -1) {
+            game.snakeThreeMove = computerMoves[2];
         }
     }
     function resetEverything() {
@@ -215,15 +214,14 @@ var game;
             }
             else if (game.action == null) {
                 game.action = $interval(move, game.GameSpeed);
-                game.computerAction = $interval(computerMove, game.GameSpeed);
             }
             else {
                 $interval.cancel(game.action);
                 game.action = null;
             }
         }
-        // up arrow
         if (game.ComputerOrHuman[0] == 1) {
+            // up arrow
             if (keyCode == 38) {
                 if (game.snakeOneMove == null) {
                     game.snakeOneMove = { shiftX: -1, shiftY: 0 };

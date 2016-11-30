@@ -9,66 +9,57 @@ var aiService;
             }
             else {
                 var board = boardWithSnake.board;
+                var snake = boardWithSnake.snakes[i];
                 var head = boardWithSnake.snakes[i].headToTail[0];
                 var tempDirection = { shiftX: 1, shiftY: 0 };
                 var count = 0;
-                if (head.row + 1 < gameLogic.ROWS) {
-                    if (board[head.row + 1][head.col] === 'FOOD') {
-                        tempDirection = { shiftX: 1, shiftY: 0 };
-                        res.push(tempDirection);
+                var possibleMoves = [];
+                possibleMoves.push({ shiftX: 1, shiftY: 0 }, { shiftX: -1, shiftY: 0 }, { shiftX: 0, shiftY: 1 }, { shiftX: 0, shiftY: -1 });
+                for (var j = 0; j < possibleMoves.length; j++) {
+                    var move = possibleMoves[j];
+                    if (!isValid(move, board, snake)) {
                         continue;
                     }
-                    else if (!gameLogic.isBarrierOrBorderOrOpponentOrMySelf(head.row + 1, head.col, board)) {
-                        count++;
-                        if (Math.floor(Math.random() * count) == 0) {
-                            tempDirection = { shiftX: 1, shiftY: 0 };
-                        }
+                    if (hasFoodThisWay(head, move, board)) {
+                        tempDirection = move;
+                        console.log('find food');
+                        break;
                     }
+                    tempDirection = move;
                 }
-                if (head.row - 1 >= 0) {
-                    if (board[head.row - 1][head.col] === 'FOOD') {
-                        tempDirection = { shiftX: -1, shiftY: 0 };
-                        res.push(tempDirection);
-                        continue;
-                    }
-                    else if (!gameLogic.isBarrierOrBorderOrOpponentOrMySelf(head.row - 1, head.col, board)) {
-                        count++;
-                        if (Math.floor(Math.random() * count) == 0) {
-                            tempDirection = { shiftX: -1, shiftY: 0 };
-                        }
-                    }
-                }
-                if (head.col + 1 < gameLogic.ROWS) {
-                    if (board[head.row][head.col + 1] === 'FOOD') {
-                        tempDirection = { shiftX: 0, shiftY: 1 };
-                        res.push(tempDirection);
-                        continue;
-                    }
-                    else if (!gameLogic.isBarrierOrBorderOrOpponentOrMySelf(head.row, head.col + 1, board)) {
-                        count++;
-                        if (Math.floor(Math.random() * count) == 0) {
-                            tempDirection = { shiftX: 0, shiftY: 1 };
-                        }
-                    }
-                }
-                if (head.col - 1 >= 0) {
-                    if (board[head.row][head.col - 1] === 'FOOD') {
-                        tempDirection = { shiftX: 0, shiftY: -1 };
-                        res.push(tempDirection);
-                        continue;
-                    }
-                    else if (!gameLogic.isBarrierOrBorderOrOpponentOrMySelf(head.row, head.col - 1, board)) {
-                        count++;
-                        if (Math.floor(Math.random() * count) == 0) {
-                            tempDirection = { shiftX: 0, shiftY: -1 };
-                        }
-                    }
-                }
+                console.log(tempDirection);
                 res.push(tempDirection);
             }
         }
         return res;
     }
     aiService.findComputerMove = findComputerMove;
+    function hasFoodThisWay(head, direction, board) {
+        if (gameLogic.isBarrierOrBorderOrOpponentOrMySelf(head.row + direction.shiftX, head.col + direction.shiftY, board)) {
+            return false;
+        }
+        if (board[head.row + direction.shiftX][head.col + direction.shiftY] === 'FOOD') {
+            return true;
+        }
+        if (gameLogic.isBarrierOrBorderOrOpponentOrMySelf(head.row + 2 * direction.shiftX, head.col + 2 * direction.shiftY, board)) {
+            return false;
+        }
+        if (board[head.row + 2 * direction.shiftX][head.col + 2 * direction.shiftY] === 'FOOD') {
+            return true;
+        }
+        if (gameLogic.isBarrierOrBorderOrOpponentOrMySelf(head.row + 3 * direction.shiftX, head.col + 3 * direction.shiftY, board)) {
+            return false;
+        }
+        if (board[head.row + 3 * direction.shiftX][head.col + 3 * direction.shiftY] === 'FOOD') {
+            return true;
+        }
+    }
+    function isValid(newDirection, board, snake) {
+        var head = snake.headToTail[0];
+        var oldDirection = snake.currentDirection;
+        return !gameLogic.isBarrierOrBorderOrOpponentOrMySelf(head.row + newDirection.shiftX, head.col + newDirection.shiftY, board)
+            && !(oldDirection.shiftX + newDirection.shiftX == 0 &&
+                oldDirection.shiftY + newDirection.shiftY == 0);
+    }
 })(aiService || (aiService = {}));
 //# sourceMappingURL=aiService.js.map
