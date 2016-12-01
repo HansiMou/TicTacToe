@@ -45,7 +45,8 @@
   <b>Instructions</b>
   <p>- Control your snake(square dot) to eat food(green dot) to get longer.<br>
     - Bumping into walls, other snakes and obstacles(black X) will cause you to lose.<br>
-    - The longest snake alive will win.</p><br>
+    - The longest snake alive will win.</p>
+  <p>Press 'enter' to start/stop/resume the game, 'r' to restart</p>
   <h2 style="color:green;">Time left: {{game.RemainingTime/1000 >= 0 ? game.RemainingTime/1000 : 0}}</h2><br>
 </div>
 <div style="margin-left: 74%; line-height: 0">
@@ -56,7 +57,6 @@
   <h3 style="color:blue;" ng-if="game.isSnakeDead(0)">player1 lose: {{game.getSnakeLoseInfo(0)}}</h3>
   <h3 style="color:firebrick;" ng-if="game.isSnakeDead(1)">player2 lose: {{game.getSnakeLoseInfo(1)}}</h3>
   <h3 style="color:orange;" ng-if="game.ThirdComputerPlayer && game.isSnakeDead(2)">player3 lose: {{game.getSnakeLoseInfo(2)}}</h3>
-
 </div>
 <div style="margin-left: 74%; margin-top: 5%; line-height: 0">
   <h1 ng-if="game.isDraw()" style="color:black;">Draw</h1>
