@@ -13,44 +13,52 @@
 </head>
 <body ng-cloak ng-keydown="game.keyDown($event.keyCode)">
 <!--instruction and adapter-->
-<div style="margin-top: 10%; margin-left: 3%; line-height: 0;">
-  <h4>Instructions</h4>
-  <p>Press 'Enter' to start or stop the game</p><br>
-  <h4 style="color:blue;">Player 1: &uarr; &darr; &larr; &rarr; </h4>
+<div style="margin-top: 10%; margin-left: 2%; line-height: 0;">
   <form>
-    <label><input ng-model="game.ComputerOrHuman[0]" type="radio" value="1">human</label>
-    <label><input ng-model="game.ComputerOrHuman[0]" type="radio" value="-1">computer</label>
-  <h4 style="color:red;">Player 2: w, a, s, d</h4>
-    <label><input ng-model="game.ComputerOrHuman[1]" type="radio" value="1">human</label>
-    <label><input ng-model="game.ComputerOrHuman[1]" type="radio" value="-1">computer</label><br>
-    <b style="line-height: 2.5;">Third computer player</b><label><input ng-model="game.ThirdComputerPlayer" ng-change="game.changePlayerNumber()" type="checkbox"></label>
-  <h4>Game speed</h4>
-    <label><input ng-model="game.GameSpeed" ng-change="game.changeGameSpeed()" type="radio" value="700">slow</label>
-    <label><input ng-model="game.GameSpeed" ng-change="game.changeGameSpeed()" type="radio" value="500">normal</label>
-    <label><input ng-model="game.GameSpeed" ng-change="game.changeGameSpeed()" type="radio" value="200">fast</label>
-    <label><input ng-model="game.GameSpeed" ng-change="game.changeGameSpeed()" type="radio" value="70">hardcore</label>
-  <h4>Food</h4>
-    <label><input ng-model="game.NumberOfFood" ng-change="game.changeFoodNumber()" type="radio" value="5">few</label>
-    <label><input ng-model="game.NumberOfFood" ng-change="game.changeFoodNumber()" type="radio" value="15">normal</label>
-    <label><input ng-model="game.NumberOfFood" ng-change="game.changeFoodNumber()" type="radio" value="45">plenty</label>
-    <label><input ng-model="game.NumberOfFood" ng-change="game.changeFoodNumber()" type="radio" value="100">harvest</label>
-  <h4>Obstacle</h4>
-    <label><input ng-model="game.NumberOfBarrier" ng-change="game.changeBarrierNumber()" type="radio" value="5">few</label>
-    <label><input ng-model="game.NumberOfBarrier" ng-change="game.changeBarrierNumber()" type="radio" value="15">normal</label>
-    <label><input ng-model="game.NumberOfBarrier" ng-change="game.changeBarrierNumber()" type="radio" value="45">plenty</label>
-    <label><input ng-model="game.NumberOfBarrier" ng-change="game.changeBarrierNumber()" type="radio" value="100">crazy</label>
+    <h4 style="color:blue;">Player 1: &uarr; &darr; &larr; &rarr; </h4>
+      <label><input ng-model="game.ComputerOrHuman[0]" type="radio" value="1">human</label>
+      <label><input ng-model="game.ComputerOrHuman[0]" type="radio" value="-1">computer</label>
+    <h4 style="color:firebrick;">Player 2: w, a, s, d</h4>
+      <label><input ng-model="game.ComputerOrHuman[1]" type="radio" value="1">human</label>
+      <label><input ng-model="game.ComputerOrHuman[1]" type="radio" value="-1">computer</label><br>
+      <b style="line-height: 2.5;">Third computer player</b><label><input ng-model="game.ThirdComputerPlayer" ng-change="game.changePlayerNumber()" type="checkbox"></label>
+    <h4>Game speed</h4>
+      <label><input ng-model="game.GameSpeed" ng-change="game.changeGameSpeed()" type="radio" value="700">slow</label>
+      <label><input ng-model="game.GameSpeed" ng-change="game.changeGameSpeed()" type="radio" value="500">normal</label>
+      <label><input ng-model="game.GameSpeed" ng-change="game.changeGameSpeed()" type="radio" value="200">fast</label>
+      <label><input ng-model="game.GameSpeed" ng-change="game.changeGameSpeed()" type="radio" value="70">hardcore</label>
+    <h4>Food</h4>
+      <label><input ng-model="game.NumberOfFood" ng-change="game.changeFoodNumber()" type="radio" value="5">few</label>
+      <label><input ng-model="game.NumberOfFood" ng-change="game.changeFoodNumber()" type="radio" value="15">normal</label>
+      <label><input ng-model="game.NumberOfFood" ng-change="game.changeFoodNumber()" type="radio" value="45">plenty</label>
+      <label><input ng-model="game.NumberOfFood" ng-change="game.changeFoodNumber()" type="radio" value="100">crazy</label>
+    <h4>Obstacle</h4>
+      <label><input ng-model="game.NumberOfBarrier" ng-change="game.changeBarrierNumber()" type="radio" value="5">few</label>
+      <label><input ng-model="game.NumberOfBarrier" ng-change="game.changeBarrierNumber()" type="radio" value="15">normal</label>
+      <label><input ng-model="game.NumberOfBarrier" ng-change="game.changeBarrierNumber()" type="radio" value="45">plenty</label>
+      <label><input ng-model="game.NumberOfBarrier" ng-change="game.changeBarrierNumber()" type="radio" value="100">crazy</label>
   </form>
 </div>
-<!--time, scores and results-->
-<div style="margin-left: 77%; margin-top: -32%; line-height: 0">
+
+<!--instruction, time, scores and results-->
+<div style="margin-left: 74%; margin-top: -29%; line-height: 1">
+  <b>Instructions</b>
+  <p>- Control your snake(square dot) to eat food(green dot) to get longer.<br>
+    - Bumping into walls, other snakes and obstacles(black X) will cause you to lose.<br>
+    - The longest snake alive will win.</p><br>
   <h2 style="color:green;">Time left: {{game.RemainingTime/1000 >= 0 ? game.RemainingTime/1000 : 0}}</h2><br>
 </div>
-<div style="margin-left: 77%; line-height: 0">
+<div style="margin-left: 74%; line-height: 0">
   <h3 style="color:blue;">score1: {{game.getSnakeLength(0)}}</h3>
-  <h3 style="color:red;">score2: {{game.getSnakeLength(1)}}</h3>
+  <h3 style="color:firebrick;">score2: {{game.getSnakeLength(1)}}</h3>
   <h3 style="color:orange;" ng-if="game.ThirdComputerPlayer">score3: {{game.getSnakeLength(2)}}</h3>
+  <br>
+  <h3 style="color:blue;" ng-if="game.isSnakeDead(0)">player1 lose: {{game.getSnakeLoseInfo(0)}}</h3>
+  <h3 style="color:firebrick;" ng-if="game.isSnakeDead(1)">player2 lose: {{game.getSnakeLoseInfo(1)}}</h3>
+  <h3 style="color:orange;" ng-if="game.ThirdComputerPlayer && game.isSnakeDead(2)">player3 lose: {{game.getSnakeLoseInfo(2)}}</h3>
+
 </div>
-<div style="margin-left: 77%; margin-top: 15%; line-height: 0">
+<div style="margin-left: 74%; margin-top: 5%; line-height: 0">
   <h1 ng-if="game.isDraw()" style="color:black;">Draw</h1>
   <h1 ng-if="game.isFinished() && !game.isDraw()" style="color:{{game.getWinnerColor()}};">WIN!</h1>
 </div>
@@ -67,7 +75,7 @@
             id="{{'e2e_test_pieceO_' + row + 'x' + col}}"
             width="100%" height="100%">
           <circle cx="50%" cy="50%" r="47%"
-            stroke="green" stroke-width="5%" fill="green" />0
+            stroke="green" stroke-width="5%" fill="green" />
         </svg>
         <svg ng-if="game.isSnakeOne(row, col)"
             id="{{'e2e_test_pieceX_' + row + 'x' + col}}"
@@ -77,7 +85,7 @@
         <svg ng-if="game.isSnakeTwo(row, col)"
              id="{{'e2e_test_pieceX_' + row + 'x' + col}}"
              width="100%" height="100%">
-          <rect height="100%" width="100%" stroke="red" fill="red"></rect>
+          <rect height="100%" width="100%" stroke="firebrick" fill="firebrick"></rect>
         </svg>
         <svg ng-if="game.isSnakeThree(row, col)"
              id="{{'e2e_test_pieceX_' + row + 'x' + col}}"

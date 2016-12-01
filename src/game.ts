@@ -31,6 +31,7 @@ module game {
   export let snakeThreeMove: Direction = null;
   export let RemainingTime = ALLTIME;
   export let reset = true;
+  export let loseInfo = '';
 
   export function init() {
     resizeGameAreaService.setWidthToHeight(1);
@@ -204,6 +205,22 @@ module game {
     }
   }
 
+  export function isSnakeDead(index: number): boolean {
+    if (isFirstMove()) {
+      return false;
+    } else {
+      return currentUpdateUI.move.stateAfterMove.boardWithSnakes.snakes[index].dead;
+    }
+  }
+
+  export function getSnakeLoseInfo(index: number): string {
+    if (isFirstMove()) {
+      return '';
+    } else {
+      return currentUpdateUI.move.stateAfterMove.boardWithSnakes.snakes[index].loseInfo;
+    }
+  }
+
   export function shouldSlowlyAppear(row: number, col: number): boolean {
     if (isFirstMove() || !currentUpdateUI.stateBeforeMove || reset) {
       return true;
@@ -223,6 +240,15 @@ module game {
       } else if (action == null) {
         action = $interval(move, GameSpeed);
       } else {
+        $interval.cancel(action);
+        action = null;
+      }
+    }
+
+    // 'r' to restart the game
+    if (keyCode == 82) {
+      resetEverything();
+      if (action) {
         $interval.cancel(action);
         action = null;
       }

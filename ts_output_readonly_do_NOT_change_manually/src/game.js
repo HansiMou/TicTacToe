@@ -21,6 +21,7 @@ var game;
     game.snakeThreeMove = null;
     game.RemainingTime = game.ALLTIME;
     game.reset = true;
+    game.loseInfo = '';
     function init() {
         resizeGameAreaService.setWidthToHeight(1);
         moveService.setGame({
@@ -193,6 +194,24 @@ var game;
         }
     }
     game.getWinnerColor = getWinnerColor;
+    function isSnakeDead(index) {
+        if (isFirstMove()) {
+            return false;
+        }
+        else {
+            return game.currentUpdateUI.move.stateAfterMove.boardWithSnakes.snakes[index].dead;
+        }
+    }
+    game.isSnakeDead = isSnakeDead;
+    function getSnakeLoseInfo(index) {
+        if (isFirstMove()) {
+            return '';
+        }
+        else {
+            return game.currentUpdateUI.move.stateAfterMove.boardWithSnakes.snakes[index].loseInfo;
+        }
+    }
+    game.getSnakeLoseInfo = getSnakeLoseInfo;
     function shouldSlowlyAppear(row, col) {
         if (isFirstMove() || !game.currentUpdateUI.stateBeforeMove || game.reset) {
             return true;
@@ -214,6 +233,14 @@ var game;
                 game.action = $interval(move, game.GameSpeed);
             }
             else {
+                $interval.cancel(game.action);
+                game.action = null;
+            }
+        }
+        // 'r' to restart the game
+        if (keyCode == 82) {
+            resetEverything();
+            if (game.action) {
                 $interval.cancel(game.action);
                 game.action = null;
             }

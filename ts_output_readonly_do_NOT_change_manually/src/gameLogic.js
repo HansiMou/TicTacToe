@@ -41,7 +41,7 @@ var gameLogic;
     }
     // side effect: update the board with snake
     function getInitialSnake(board, player) {
-        var snake = { headToTail: [], dead: false, oldTail: null, currentDirection: null };
+        var snake = { headToTail: [], dead: false, oldTail: null, currentDirection: null, loseInfo: '' };
         var found = false;
         while (!found) {
             var randomX = Math.floor((Math.random() * gameLogic.ROWS));
@@ -199,18 +199,21 @@ var gameLogic;
                 // bump into border
                 if (head.row < 0 || head.row >= gameLogic.ROWS || head.col < 0 || head.col >= gameLogic.COLS) {
                     snake.dead = true;
+                    snake.loseInfo = 'bump into borders.';
                     log.log("dead because bump into border");
                     continue;
                 }
                 // bump into barrier
                 if (board[head.row][head.col] === 'BARRIER') {
                     snake.dead = true;
+                    snake.loseInfo = 'bump into obstacle.';
                     log.log("dead because bump into barrier");
                     continue;
                 }
                 // bump into itself
                 for (var i = 1; i < snake.headToTail.length; i++) {
                     if (snake.headToTail[i].row == head.row && snake.headToTail[i].col == head.col) {
+                        snake.loseInfo = 'bump into itself';
                         snake.dead = true;
                         break;
                     }
@@ -221,6 +224,7 @@ var gameLogic;
                         var anotherSnake = boardWithSnakesAfterMove.snakes[secondIndex];
                         for (var j = 0; j < anotherSnake.headToTail.length; j++) {
                             if (anotherSnake.headToTail[j].row == head.row && anotherSnake.headToTail[j].col == head.col) {
+                                snake.loseInfo = 'bump into others';
                                 snake.dead = true;
                                 break outer;
                             }

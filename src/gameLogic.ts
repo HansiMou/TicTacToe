@@ -13,6 +13,7 @@ interface Snake {
   currentDirection: Direction;
   dead: boolean;
   oldTail: Cell;
+  loseInfo: string;
 }
 interface Cell {
   row: number;
@@ -68,7 +69,7 @@ module gameLogic {
 
   // side effect: update the board with snake
   function getInitialSnake(board: Board, player: number): Snake {
-    let snake: Snake = {headToTail: [], dead: false, oldTail: null, currentDirection: null};
+    let snake: Snake = {headToTail: [], dead: false, oldTail: null, currentDirection: null, loseInfo: ''};
     let found: boolean = false;
 
     while (!found) {
@@ -236,18 +237,21 @@ module gameLogic {
         // bump into border
         if (head.row < 0 || head.row >= ROWS || head.col < 0 || head.col >= COLS) {
           snake.dead = true;
+          snake.loseInfo = 'bump into borders.';
           log.log("dead because bump into border");
           continue;
         }
         // bump into barrier
         if (board[head.row][head.col] === 'BARRIER') {
           snake.dead = true;
+          snake.loseInfo = 'bump into obstacle.';
           log.log("dead because bump into barrier");
           continue;
         }
         // bump into itself
         for (let i = 1; i < snake.headToTail.length; i++) {
           if (snake.headToTail[i].row == head.row && snake.headToTail[i].col == head.col) {
+            snake.loseInfo = 'bump into itself';
             snake.dead = true;
             break;
           }
@@ -258,6 +262,7 @@ module gameLogic {
             let anotherSnake = boardWithSnakesAfterMove.snakes[secondIndex];
             for (let j = 0; j < anotherSnake.headToTail.length; j++) {
               if (anotherSnake.headToTail[j].row == head.row && anotherSnake.headToTail[j].col == head.col) {
+                snake.loseInfo = 'bump into others';
                 snake.dead = true;
                 break outer;
               }
