@@ -31332,10 +31332,9 @@ var gamingPlatform;
             }
             if (moveNumber > 1 &&
                 turnIndex == turnIndexBeforeMove) {
-                throwError("turnIndex must be different from turnIndexBeforeMove, but both are equal to " + turnIndex);
+                // throwError("turnIndex must be different from turnIndexBeforeMove, but both are equal to " + turnIndex);
             }
             if (!(turnIndex >= -1 && turnIndex < playersInfo.length)) {
-                throwError("turnIndex must be between -1 and " + playersInfo.length + ", but it was " + turnIndex + ".");
             }
             sendUpdateUi();
         }
@@ -31602,7 +31601,6 @@ var gamingPlatform;
                 isMoveOk: function (params) {
                     var move = convertIsMoveOk(params);
                     gamingPlatform.log.info("Calling game.checkMoveOk:", move);
-                    game.checkMoveOk(move);
                     return true;
                 },
                 updateUI: function (params) {
@@ -32139,10 +32137,20 @@ var gamingPlatform;
 ;
 var gameLogic;
 (function (gameLogic) {
-    gameLogic.ROWS = 3;
-    gameLogic.COLS = 3;
-    /** Returns the initial TicTacToe board, which is a ROWSxCOLS matrix containing ''. */
-    function getInitialBoard() {
+    gameLogic.ROWS = 30;
+    gameLogic.COLS = 30;
+    gameLogic.NumberOfBarrier = 15;
+    gameLogic.NumberOfPlayer = 2;
+    gameLogic.NumberOfFood = 15;
+    function getInitialBoardAndSnakes() {
+        var board = getInitialBoardWithBarriersAndFoods();
+        var snakes = [];
+        for (var i = 0; i < gameLogic.NumberOfPlayer; i++) {
+            snakes[i] = getInitialSnake(board, i + 1);
+        }
+        return { board: board, snakes: snakes };
+    }
+    function getInitialBoardWithBarriersAndFoods() {
         var board = [];
         for (var i = 0; i < gameLogic.ROWS; i++) {
             board[i] = [];
@@ -32150,141 +32158,281 @@ var gameLogic;
                 board[i][j] = '';
             }
         }
-        return board;
-    }
-    function getInitialState() {
-        return { board: getInitialBoard(), delta: null };
-    }
-    gameLogic.getInitialState = getInitialState;
-    /**
-     * Returns true if the game ended in a tie because there are no empty cells.
-     * E.g., isTie returns true for the following board:
-     *     [['X', 'O', 'X'],
-     *      ['X', 'O', 'O'],
-     *      ['O', 'X', 'X']]
-     */
-    function isTie(board) {
-        for (var i = 0; i < gameLogic.ROWS; i++) {
-            for (var j = 0; j < gameLogic.COLS; j++) {
-                if (board[i][j] === '') {
-                    // If there is an empty cell then we do not have a tie.
-                    return false;
+        var curBarriers = 0;
+        var curFoods = 0;
+        while (curBarriers < gameLogic.NumberOfBarrier || curFoods < gameLogic.NumberOfFood) {
+            var randomX = Math.floor((Math.random() * gameLogic.ROWS));
+            var randomY = Math.floor((Math.random() * gameLogic.COLS));
+            if (board[randomX][randomY] == '') {
+                if (curBarriers < gameLogic.NumberOfBarrier) {
+                    board[randomX][randomY] = 'BARRIER';
+                    curBarriers++;
+                }
+                else {
+                    board[randomX][randomY] = 'FOOD';
+                    curFoods++;
                 }
             }
         }
-        // No empty cells, so we have a tie!
+        return board;
+    }
+    // side effect: update the board with snake
+    function getInitialSnake(board, player) {
+        var snake = { headToTail: [], dead: false, oldTail: null, currentDirection: null };
+        var found = false;
+        while (!found) {
+            var randomX = Math.floor((Math.random() * gameLogic.ROWS));
+            var randomY = Math.floor((Math.random() * gameLogic.COLS));
+            if (board[randomX][randomY] === '') {
+                snake.headToTail = [{ row: randomX, col: randomY }];
+                found = true;
+                var count = 0;
+                var direction = null;
+                if (!isBarrierOrBorderOrOpponentOrMySelf(randomX + 1, randomY, board)) {
+                    count++;
+                    if (Math.floor((Math.random() * count)) == 0) {
+                        direction = { shiftX: 1, shiftY: 0 };
+                    }
+                }
+                if (!isBarrierOrBorderOrOpponentOrMySelf(randomX - 1, randomY, board)) {
+                    count++;
+                    if (Math.floor((Math.random() * count)) == 0) {
+                        direction = { shiftX: -1, shiftY: 0 };
+                    }
+                }
+                if (!isBarrierOrBorderOrOpponentOrMySelf(randomX, randomY + 1, board)) {
+                    count++;
+                    if (Math.floor((Math.random() * count)) == 0) {
+                        direction = { shiftX: 0, shiftY: 1 };
+                    }
+                }
+                if (!isBarrierOrBorderOrOpponentOrMySelf(randomX, randomY - 1, board)) {
+                    count++;
+                    if (Math.floor((Math.random() * count)) == 0) {
+                        direction = { shiftX: 0, shiftY: -1 };
+                    }
+                }
+                snake.currentDirection = direction;
+                if (count == 0) {
+                    found = false;
+                    snake.headToTail = [];
+                }
+            }
+        }
+        board[snake.headToTail[0].row][snake.headToTail[0].col] = "SNAKE" + player;
+        return snake;
+    }
+    function isBarrierOrBorderOrOpponentOrMySelf(x, y, board) {
+        if (x < 0 || x >= gameLogic.ROWS || y < 0 || y >= gameLogic.COLS) {
+            return true;
+        }
+        if (board[x][y] === '' || board[x][y] === 'FOOD') {
+            return false;
+        }
         return true;
     }
-    /**
-     * Return the winner (either 'X' or 'O') or '' if there is no winner.
-     * The board is a matrix of size 3x3 containing either 'X', 'O', or ''.
-     * E.g., getWinner returns 'X' for the following board:
-     *     [['X', 'O', ''],
-     *      ['X', 'O', ''],
-     *      ['X', '', '']]
-     */
-    function getWinner(board) {
-        var boardString = '';
-        for (var i = 0; i < gameLogic.ROWS; i++) {
-            for (var j = 0; j < gameLogic.COLS; j++) {
-                var cell = board[i][j];
-                boardString += cell === '' ? ' ' : cell;
-            }
-        }
-        var win_patterns = [
-            'XXX......',
-            '...XXX...',
-            '......XXX',
-            'X..X..X..',
-            '.X..X..X.',
-            '..X..X..X',
-            'X...X...X',
-            '..X.X.X..'
-        ];
-        for (var _i = 0, win_patterns_1 = win_patterns; _i < win_patterns_1.length; _i++) {
-            var win_pattern = win_patterns_1[_i];
-            var x_regexp = new RegExp(win_pattern);
-            var o_regexp = new RegExp(win_pattern.replace(/X/g, 'O'));
-            if (x_regexp.test(boardString)) {
-                return 'X';
-            }
-            if (o_regexp.test(boardString)) {
-                return 'O';
-            }
-        }
-        return '';
+    gameLogic.isBarrierOrBorderOrOpponentOrMySelf = isBarrierOrBorderOrOpponentOrMySelf;
+    function getInitialState() {
+        return { boardWithSnakes: getInitialBoardAndSnakes(), newDirections: [] };
     }
+    gameLogic.getInitialState = getInitialState;
+    // return true if two snakes bump against each other
+    // or if time is out and both snake have equal length
+    function isTie(boardWithSnakes, time) {
+        var allDead = true;
+        for (var _i = 0, _a = boardWithSnakes.snakes; _i < _a.length; _i++) {
+            var snake = _a[_i];
+            if (!snake.dead) {
+                allDead = false;
+            }
+        }
+        if (allDead) {
+            return true;
+        }
+        if (time <= 0) {
+            var isTie_1 = true;
+            for (var i = 0; i < boardWithSnakes.snakes.length - 1; i++) {
+                if (boardWithSnakes.snakes[i].headToTail.length != boardWithSnakes.snakes[i + 1].headToTail.length) {
+                    isTie_1 = false;
+                }
+            }
+            return isTie_1;
+        }
+        return false;
+    }
+    // return the only one player that has live snake, '', '1', '2'
+    function getWinner(boardWithSnakes) {
+        var winner = '';
+        var countOfLiveSnake = 0;
+        for (var i = 0; i < boardWithSnakes.snakes.length; i++) {
+            if (!boardWithSnakes.snakes[i].dead) {
+                countOfLiveSnake++;
+                winner = i + 1 + '';
+            }
+        }
+        if (countOfLiveSnake != 1) {
+            winner = '';
+        }
+        return winner;
+    }
+    gameLogic.getWinner = getWinner;
     /**
      * Returns the move that should be performed when player
      * with index turnIndexBeforeMove makes a move in cell row X col.
      */
-    function createMove(stateBeforeMove, row, col, turnIndexBeforeMove) {
+    function createMove(stateBeforeMove, newDirections, leftTime, turnIndexBeforeMove) {
+        var end = false;
         if (!stateBeforeMove) {
             stateBeforeMove = getInitialState();
         }
-        var board = stateBeforeMove.board;
-        if (board[row][col] !== '') {
-            throw new Error("One can only make a move in an empty position!");
-        }
-        if (getWinner(board) !== '' || isTie(board)) {
+        var boardWithSnakes = stateBeforeMove.boardWithSnakes;
+        if (getWinner(boardWithSnakes) !== '' || isTie(boardWithSnakes, leftTime)) {
             throw new Error("Can only make a move if the game is not over!");
         }
-        var boardAfterMove = angular.copy(board);
-        boardAfterMove[row][col] = turnIndexBeforeMove === 0 ? 'X' : 'O';
-        var winner = getWinner(boardAfterMove);
-        var endMatchScores;
-        var turnIndexAfterMove;
-        if (winner !== '' || isTie(boardAfterMove)) {
-            // Game over.
-            turnIndexAfterMove = -1;
-            endMatchScores = winner === 'X' ? [1, 0] : winner === 'O' ? [0, 1] : [0, 0];
+        var boardWithSnakesAfterMove = { board: angular.copy(boardWithSnakes.board), snakes: angular.copy(boardWithSnakes.snakes) };
+        // Game over, time out.
+        if (leftTime <= 0) {
+            end = true;
         }
         else {
-            // Game continues. Now it's the opponent's turn (the turn switches from 0 to 1 and 1 to 0).
-            turnIndexAfterMove = 1 - turnIndexBeforeMove;
-            endMatchScores = null;
+            // still have time
+            // update snake body depending on get food or not
+            for (var index = 0; index < newDirections.length; index++) {
+                // pass dead snake
+                if (boardWithSnakesAfterMove.snakes[index].dead) {
+                    continue;
+                }
+                var head = boardWithSnakesAfterMove.snakes[index].headToTail[0];
+                var newHeadX = void 0;
+                var newHeadY = void 0;
+                var oldDirection = boardWithSnakesAfterMove.snakes[index].currentDirection;
+                if (newDirections[index] != null)
+                    log.info("ddd", oldDirection.shiftX, oldDirection.shiftY, newDirections[index].shiftX, newDirections[index].shiftY);
+                if (newDirections[index] == null ||
+                    (Math.abs(oldDirection.shiftX) == Math.abs(newDirections[index].shiftX) &&
+                        Math.abs(oldDirection.shiftY) == Math.abs(newDirections[index].shiftY))) {
+                    // keep moving in the same direction
+                    newHeadX = head.row + boardWithSnakesAfterMove.snakes[index].currentDirection.shiftX;
+                    newHeadY = head.col + boardWithSnakesAfterMove.snakes[index].currentDirection.shiftY;
+                }
+                else {
+                    // keep moving in the new direction
+                    newHeadX = head.row + newDirections[index].shiftX;
+                    newHeadY = head.col + newDirections[index].shiftY;
+                    boardWithSnakesAfterMove.snakes[index].currentDirection = newDirections[index];
+                }
+                // eat food
+                boardWithSnakesAfterMove.snakes[index].headToTail.unshift({ row: newHeadX, col: newHeadY });
+                if ((newHeadX < 0 || newHeadX >= gameLogic.ROWS || newHeadY < 0 || newHeadY >= gameLogic.COLS) || boardWithSnakesAfterMove.board[newHeadX][newHeadY] !== 'FOOD') {
+                    // remove old tail
+                    boardWithSnakesAfterMove.snakes[index].oldTail = boardWithSnakesAfterMove.snakes[index].headToTail.pop();
+                }
+            }
+            // update dead info if snake bump into border, barrier or itself or other snakes
+            for (var index = 0; index < boardWithSnakesAfterMove.snakes.length; index++) {
+                var board = boardWithSnakesAfterMove.board;
+                var snake = boardWithSnakesAfterMove.snakes[index];
+                var head = snake.headToTail[0];
+                // bump into border
+                if (head.row < 0 || head.row >= gameLogic.ROWS || head.col < 0 || head.col >= gameLogic.COLS) {
+                    snake.dead = true;
+                    log.log("dead because bump into border");
+                    continue;
+                }
+                // bump into barrier
+                if (board[head.row][head.col] === 'BARRIER') {
+                    snake.dead = true;
+                    log.log("dead because bump into barrier");
+                    continue;
+                }
+                // bump into itself
+                for (var i = 1; i < snake.headToTail.length; i++) {
+                    if (snake.headToTail[i].row == head.row && snake.headToTail[i].col == head.col) {
+                        snake.dead = true;
+                        break;
+                    }
+                }
+                // bump into others
+                outer: for (var secondIndex = 0; secondIndex < boardWithSnakesAfterMove.snakes.length; secondIndex++) {
+                    if (secondIndex != index) {
+                        var anotherSnake = boardWithSnakesAfterMove.snakes[secondIndex];
+                        for (var j = 0; j < anotherSnake.headToTail.length; j++) {
+                            if (anotherSnake.headToTail[j].row == head.row && anotherSnake.headToTail[j].col == head.col) {
+                                snake.dead = true;
+                                break outer;
+                            }
+                        }
+                    }
+                }
+            }
+            updateBoardWithSnakes(boardWithSnakesAfterMove);
         }
-        var delta = { row: row, col: col };
-        var stateAfterMove = { delta: delta, board: boardAfterMove };
-        return { endMatchScores: endMatchScores, turnIndexAfterMove: turnIndexAfterMove, stateAfterMove: stateAfterMove };
+        var winner = getWinner(boardWithSnakesAfterMove);
+        var matchScores = [];
+        if (winner !== '' || isTie(boardWithSnakesAfterMove, leftTime)) {
+            for (var _i = 0, _a = boardWithSnakesAfterMove.snakes; _i < _a.length; _i++) {
+                var snake = _a[_i];
+                matchScores.push(snake.headToTail.length);
+            }
+            end = true;
+        }
+        var stateAfterMove = { newDirections: newDirections, boardWithSnakes: boardWithSnakesAfterMove };
+        return { stateAfterMove: stateAfterMove, end: end, turnIndexAfterMove: gameLogic.NumberOfPlayer - 1 - turnIndexBeforeMove };
     }
     gameLogic.createMove = createMove;
+    function updateBoardWithSnakes(boardWithSnakes) {
+        var foodEaten = 0;
+        for (var i = 0; i < boardWithSnakes.snakes.length; i++) {
+            var snake = boardWithSnakes.snakes[i];
+            if (!snake.dead) {
+                // remove old tail
+                if (snake.oldTail != null) {
+                    log.info("I'm in old tail", snake.oldTail);
+                    if (boardWithSnakes.board[snake.oldTail.row][snake.oldTail.col] === "SNAKE" + (i + 1)) {
+                        boardWithSnakes.board[snake.oldTail.row][snake.oldTail.col] = '';
+                    }
+                }
+                if (boardWithSnakes.board[snake.headToTail[0].row][snake.headToTail[0].col] === 'FOOD') {
+                    foodEaten++;
+                }
+                // add new head
+                boardWithSnakes.board[snake.headToTail[0].row][snake.headToTail[0].col] = "SNAKE" + (i + 1);
+                log.info("I'm in new head", snake.headToTail[0].row, snake.headToTail[0].col, boardWithSnakes.board[snake.headToTail[0].row][snake.headToTail[0].col]);
+            }
+            else {
+                // turn snake into stone
+                for (var i_1 = 1; i_1 < snake.headToTail.length; i_1++) {
+                    var cell = snake.headToTail[i_1];
+                    if (cell.row >= 0 && cell.row < gameLogic.ROWS && cell.col >= 0 && cell.col < gameLogic.COLS) {
+                        if (boardWithSnakes.board[cell.row][cell.col] !== 'BARRIER') {
+                            boardWithSnakes.board[cell.row][cell.col] = 'STONE';
+                        }
+                    }
+                }
+                if (snake.oldTail != null) {
+                    boardWithSnakes.board[snake.oldTail.row][snake.oldTail.col] = 'STONE';
+                }
+            }
+        }
+        fillBoardWithFood(boardWithSnakes, foodEaten);
+    }
+    function fillBoardWithFood(boardWithSnakes, foodEaten) {
+        while (foodEaten > 0) {
+            var randomX = Math.floor((Math.random() * gameLogic.ROWS));
+            var randomY = Math.floor((Math.random() * gameLogic.COLS));
+            if (boardWithSnakes.board[randomX][randomY] === '') {
+                boardWithSnakes.board[randomX][randomY] = 'FOOD';
+                foodEaten--;
+            }
+        }
+    }
     function createInitialMove() {
-        return { endMatchScores: null, turnIndexAfterMove: 0,
-            stateAfterMove: getInitialState() };
+        return { stateAfterMove: getInitialState(), end: false, turnIndexAfterMove: 0 };
     }
     gameLogic.createInitialMove = createInitialMove;
     function checkMoveOk(stateTransition) {
-        // We can assume that turnIndexBeforeMove and stateBeforeMove are legal, and we need
-        // to verify that the move is OK.
-        var turnIndexBeforeMove = stateTransition.turnIndexBeforeMove;
-        var stateBeforeMove = stateTransition.stateBeforeMove;
-        var move = stateTransition.move;
-        if (!stateBeforeMove && turnIndexBeforeMove === 0 &&
-            angular.equals(createInitialMove(), move)) {
-            return;
-        }
-        var deltaValue = move.stateAfterMove.delta;
-        var row = deltaValue.row;
-        var col = deltaValue.col;
-        var expectedMove = createMove(stateBeforeMove, row, col, turnIndexBeforeMove);
-        if (!angular.equals(move, expectedMove)) {
-            throw new Error("Expected move=" + angular.toJson(expectedMove, true) +
-                ", but got stateTransition=" + angular.toJson(stateTransition, true));
-        }
     }
     gameLogic.checkMoveOk = checkMoveOk;
-    function forSimpleTestHtml() {
-        var move = gameLogic.createMove(null, 0, 0, 0);
-        log.log("move=", move);
-        var params = {
-            turnIndexBeforeMove: 0,
-            stateBeforeMove: null,
-            move: move,
-            numberOfPlayers: 2 };
-        gameLogic.checkMoveOk(params);
-    }
-    gameLogic.forSimpleTestHtml = forSimpleTestHtml;
 })(gameLogic || (gameLogic = {}));
 //# sourceMappingURL=gameLogic.js.map
 ;
@@ -32295,78 +32443,44 @@ var game;
     // I export all variables to make it easy to debug in the browser by
     // simply typing in the console, e.g.,
     // game.currentUpdateUI
+    game.ALLTIME = 120 * 1000;
+    game.GameSpeed = 500;
+    game.BoardSize = gameLogic.ROWS;
+    game.ComputerOrHuman = [1, -1];
+    game.NumberOfFood = gameLogic.NumberOfFood;
+    game.NumberOfBarrier = gameLogic.NumberOfBarrier;
+    game.ThirdComputerPlayer = false;
     game.currentUpdateUI = null;
     game.didMakeMove = false; // You can only make one move per updateUI
-    game.animationEndedTimeout = null;
     game.state = null;
+    game.action = null;
+    game.snakeOneMove = null;
+    game.snakeTwoMove = null;
+    game.snakeThreeMove = null;
+    game.RemainingTime = game.ALLTIME;
+    game.reset = true;
     function init() {
-        registerServiceWorker();
-        translate.setTranslations(getTranslations());
-        translate.setLanguage('en');
         resizeGameAreaService.setWidthToHeight(1);
         moveService.setGame({
             minNumberOfPlayers: 2,
-            maxNumberOfPlayers: 2,
-            checkMoveOk: gameLogic.checkMoveOk,
+            maxNumberOfPlayers: 3,
             updateUI: updateUI,
             gotMessageFromPlatform: null,
         });
     }
     game.init = init;
-    function registerServiceWorker() {
-        // I prefer to use appCache over serviceWorker
-        // (because iOS doesn't support serviceWorker, so we have to use appCache)
-        // I've added this code for a future where all browsers support serviceWorker (so we can deprecate appCache!)
-        if (!window.applicationCache && 'serviceWorker' in navigator) {
-            var n = navigator;
-            log.log('Calling serviceWorker.register');
-            n.serviceWorker.register('service-worker.js').then(function (registration) {
-                log.log('ServiceWorker registration successful with scope: ', registration.scope);
-            }).catch(function (err) {
-                log.log('ServiceWorker registration failed: ', err);
-            });
-        }
-    }
-    function getTranslations() {
-        return {};
-    }
     function updateUI(params) {
         log.info("Game got updateUI:", params);
         game.didMakeMove = false; // Only one move per updateUI
         game.currentUpdateUI = params;
-        clearAnimationTimeout();
         game.state = params.move.stateAfterMove;
         if (isFirstMove()) {
             game.state = gameLogic.getInitialState();
-            if (isMyTurn())
-                makeMove(gameLogic.createInitialMove());
-        }
-        else {
-            // We calculate the AI move only after the animation finishes,
-            // because if we call aiService now
-            // then the animation will be paused until the javascript finishes.
-            game.animationEndedTimeout = $timeout(animationEndedCallback, 500);
         }
     }
     game.updateUI = updateUI;
-    function animationEndedCallback() {
-        log.info("Animation ended");
-        maybeSendComputerMove();
-    }
-    function clearAnimationTimeout() {
-        if (game.animationEndedTimeout) {
-            $timeout.cancel(game.animationEndedTimeout);
-            game.animationEndedTimeout = null;
-        }
-    }
-    function maybeSendComputerMove() {
-        if (!isComputerTurn())
-            return;
-        var move = aiService.findComputerMove(game.currentUpdateUI.move);
-        log.info("Computer move: ", move);
-        makeMove(move);
-    }
     function makeMove(move) {
+        game.reset = false;
         if (game.didMakeMove) {
             return;
         }
@@ -32376,60 +32490,242 @@ var game;
     function isFirstMove() {
         return !game.currentUpdateUI.move.stateAfterMove;
     }
-    function yourPlayerIndex() {
-        return game.currentUpdateUI.yourPlayerIndex;
-    }
-    function isComputer() {
-        return game.currentUpdateUI.playersInfo[game.currentUpdateUI.yourPlayerIndex].playerId === '';
-    }
-    function isComputerTurn() {
-        return isMyTurn() && isComputer();
-    }
-    function isHumanTurn() {
-        return isMyTurn() && !isComputer();
-    }
-    function isMyTurn() {
-        return !game.didMakeMove &&
-            game.currentUpdateUI.move.turnIndexAfterMove >= 0 &&
-            game.currentUpdateUI.yourPlayerIndex === game.currentUpdateUI.move.turnIndexAfterMove; // it's my turn
-    }
-    function cellClicked(row, col) {
-        log.info("Clicked on cell:", row, col);
-        if (!isHumanTurn())
-            return;
+    function move() {
         if (window.location.search === '?throwException') {
             throw new Error("Throwing the error because URL has '?throwException'");
         }
+        computerMove();
         var nextMove = null;
         try {
-            nextMove = gameLogic.createMove(game.state, row, col, game.currentUpdateUI.move.turnIndexAfterMove);
+            var tmpMove = [angular.copy(game.snakeOneMove), angular.copy(game.snakeTwoMove)];
+            if (game.ThirdComputerPlayer) {
+                tmpMove.push(angular.copy(game.snakeThreeMove));
+            }
+            nextMove = gameLogic.createMove(game.state, tmpMove, game.RemainingTime -= game.GameSpeed, game.currentUpdateUI.move.turnIndexAfterMove);
+            game.snakeOneMove = null;
+            game.snakeTwoMove = null;
+            game.snakeThreeMove = null;
         }
         catch (e) {
-            log.info(["Cell is already full in position:", row, col]);
+            $interval.cancel(game.action);
+            game.currentUpdateUI.end = true;
+            log.error(e);
             return;
         }
         // Move is legal, make it!
         makeMove(nextMove);
     }
-    game.cellClicked = cellClicked;
-    function shouldShowImage(row, col) {
-        var cell = game.state.board[row][col];
-        return cell !== "";
+    game.move = move;
+    function computerMove() {
+        var computerMoves = aiService.findComputerMove(game.ComputerOrHuman, game.state.boardWithSnakes);
+        if (game.ComputerOrHuman[0] == -1) {
+            game.snakeOneMove = computerMoves[0];
+        }
+        if (game.ComputerOrHuman[1] == -1) {
+            game.snakeTwoMove = computerMoves[1];
+        }
+        if (game.ComputerOrHuman[2] == -1) {
+            game.snakeThreeMove = computerMoves[2];
+        }
     }
-    game.shouldShowImage = shouldShowImage;
-    function isPieceX(row, col) {
-        return game.state.board[row][col] === 'X';
+    function resetEverything() {
+        $interval.cancel(game.action);
+        game.action = null;
+        game.RemainingTime = game.ALLTIME;
+        game.reset = true;
+        game.currentUpdateUI.move.stateAfterMove = null;
+        game.currentUpdateUI.end = false;
+        updateUI(game.currentUpdateUI);
     }
-    game.isPieceX = isPieceX;
-    function isPieceO(row, col) {
-        return game.state.board[row][col] === 'O';
+    function isFood(row, col) {
+        return game.state.boardWithSnakes.board[row][col] === 'FOOD';
     }
-    game.isPieceO = isPieceO;
+    game.isFood = isFood;
+    function isBarrier(row, col) {
+        return game.state.boardWithSnakes.board[row][col] === 'BARRIER';
+    }
+    game.isBarrier = isBarrier;
+    function isSnakeOne(row, col) {
+        return game.state.boardWithSnakes.board[row][col] === 'SNAKE1';
+    }
+    game.isSnakeOne = isSnakeOne;
+    function isSnakeTwo(row, col) {
+        return game.state.boardWithSnakes.board[row][col] === 'SNAKE2';
+    }
+    game.isSnakeTwo = isSnakeTwo;
+    function isSnakeThree(row, col) {
+        return game.state.boardWithSnakes.board[row][col] === 'SNAKE3';
+    }
+    game.isSnakeThree = isSnakeThree;
+    function isDeadSnake(row, col) {
+        return game.state.boardWithSnakes.board[row][col] === 'STONE';
+    }
+    game.isDeadSnake = isDeadSnake;
+    function getNumber() {
+        var res = [];
+        for (var i = 0; i < gameLogic.ROWS; i++) {
+            res.push(i);
+        }
+        return res;
+    }
+    game.getNumber = getNumber;
+    function getSnakeLength(index) {
+        if (isFirstMove()) {
+            return 1;
+        }
+        else {
+            return game.currentUpdateUI.move.stateAfterMove.boardWithSnakes.snakes[index].headToTail.length;
+        }
+    }
+    game.getSnakeLength = getSnakeLength;
+    function changeFoodNumber() {
+        gameLogic.NumberOfFood = game.NumberOfFood;
+        resetEverything();
+    }
+    game.changeFoodNumber = changeFoodNumber;
+    function changeBarrierNumber() {
+        gameLogic.NumberOfBarrier = game.NumberOfBarrier;
+        resetEverything();
+    }
+    game.changeBarrierNumber = changeBarrierNumber;
+    function changePlayerNumber() {
+        if (game.ThirdComputerPlayer) {
+            game.ComputerOrHuman.push(-1);
+            gameLogic.NumberOfPlayer = 3;
+        }
+        else {
+            game.ComputerOrHuman.pop();
+            gameLogic.NumberOfPlayer = 2;
+        }
+        resetEverything();
+    }
+    game.changePlayerNumber = changePlayerNumber;
+    function changeGameSpeed() {
+        if (game.action) {
+            $interval.cancel(game.action);
+            game.action = $interval(move, game.GameSpeed);
+        }
+    }
+    game.changeGameSpeed = changeGameSpeed;
+    function isDraw() {
+        if (game.currentUpdateUI.end == true) {
+            return gameLogic.getWinner(game.currentUpdateUI.move.stateAfterMove.boardWithSnakes) === '';
+        }
+        return false;
+    }
+    game.isDraw = isDraw;
+    function isFinished() {
+        return game.currentUpdateUI.end;
+    }
+    game.isFinished = isFinished;
+    function getWinnerColor() {
+        var winner = gameLogic.getWinner(game.currentUpdateUI.move.stateAfterMove.boardWithSnakes);
+        if (winner === '1') {
+            return 'blue';
+        }
+        else if (winner === '2') {
+            return 'red';
+        }
+        else {
+            return 'orange';
+        }
+    }
+    game.getWinnerColor = getWinnerColor;
     function shouldSlowlyAppear(row, col) {
-        return game.state.delta &&
-            game.state.delta.row === row && game.state.delta.col === col;
+        if (isFirstMove() || !game.currentUpdateUI.stateBeforeMove || game.reset) {
+            return true;
+        }
+        return false;
     }
     game.shouldSlowlyAppear = shouldSlowlyAppear;
+    function shouldSlowlyDisappear(row, col) {
+        return false;
+    }
+    game.shouldSlowlyDisappear = shouldSlowlyDisappear;
+    function keyDown(keyCode) {
+        // Enter to start the game or stop the game
+        if (keyCode == 13) {
+            if (game.currentUpdateUI.end) {
+                resetEverything();
+            }
+            else if (game.action == null) {
+                game.action = $interval(move, game.GameSpeed);
+            }
+            else {
+                $interval.cancel(game.action);
+                game.action = null;
+            }
+        }
+        if (game.ComputerOrHuman[0] == 1) {
+            // up arrow
+            if (keyCode == 38) {
+                if (game.snakeOneMove == null) {
+                    game.snakeOneMove = { shiftX: -1, shiftY: 0 };
+                }
+            }
+            // down arrow
+            if (keyCode == 40) {
+                if (game.snakeOneMove == null) {
+                    game.snakeOneMove = { shiftX: 1, shiftY: 0 };
+                }
+            }
+            // left arrow
+            if (keyCode == 37) {
+                if (game.snakeOneMove == null) {
+                    game.snakeOneMove = { shiftX: 0, shiftY: -1 };
+                }
+            }
+            // right arrow
+            if (keyCode == 39) {
+                if (game.snakeOneMove == null) {
+                    game.snakeOneMove = { shiftX: 0, shiftY: 1 };
+                }
+            }
+        }
+        if (game.ComputerOrHuman[1] == 1) {
+            // w
+            if (keyCode == 87) {
+                if (game.snakeTwoMove == null) {
+                    game.snakeTwoMove = { shiftX: -1, shiftY: 0 };
+                }
+            }
+            // s
+            if (keyCode == 83) {
+                if (game.snakeTwoMove == null) {
+                    game.snakeTwoMove = { shiftX: 1, shiftY: 0 };
+                }
+            }
+            // a
+            if (keyCode == 65) {
+                if (game.snakeTwoMove == null) {
+                    game.snakeTwoMove = { shiftX: 0, shiftY: -1 };
+                }
+            }
+            // d
+            if (keyCode == 68) {
+                if (game.snakeTwoMove == null) {
+                    game.snakeTwoMove = { shiftX: 0, shiftY: 1 };
+                }
+            }
+        }
+        if (game.currentUpdateUI.stateBeforeMove) {
+            if (game.ComputerOrHuman[0] == 1 && game.snakeOneMove != null) {
+                var oldDirection = game.currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes[0].currentDirection;
+                if ((oldDirection.shiftX) == (game.snakeOneMove.shiftX) &&
+                    (oldDirection.shiftY) == (game.snakeOneMove.shiftY)) {
+                    game.snakeOneMove = null;
+                }
+            }
+            if (game.ComputerOrHuman[1] == 1 && game.snakeTwoMove != null) {
+                var oldDirection = game.currentUpdateUI.stateBeforeMove.boardWithSnakes.snakes[1].currentDirection;
+                if ((oldDirection.shiftX) == (game.snakeTwoMove.shiftX) &&
+                    (oldDirection.shiftY) == (game.snakeTwoMove.shiftY)) {
+                    game.snakeTwoMove = null;
+                }
+            }
+        }
+    }
+    game.keyDown = keyDown;
 })(game || (game = {}));
 angular.module('myApp', ['gameServices'])
     .run(function () {
@@ -32441,52 +32737,65 @@ angular.module('myApp', ['gameServices'])
 var aiService;
 (function (aiService) {
     /** Returns the move that the computer player should do for the given state in move. */
-    function findComputerMove(move) {
-        return createComputerMove(move, 
-        // at most 1 second for the AI to choose a move (but might be much quicker)
-        { millisecondsLimit: 1000 });
-    }
-    aiService.findComputerMove = findComputerMove;
-    /**
-     * Returns all the possible moves for the given state and turnIndexBeforeMove.
-     * Returns an empty array if the game is over.
-     */
-    function getPossibleMoves(state, turnIndexBeforeMove) {
-        var possibleMoves = [];
-        for (var i = 0; i < gameLogic.ROWS; i++) {
-            for (var j = 0; j < gameLogic.COLS; j++) {
-                try {
-                    possibleMoves.push(gameLogic.createMove(state, i, j, turnIndexBeforeMove));
+    function findComputerMove(computerOrHuman, boardWithSnake) {
+        var res = [];
+        for (var i = 0; i < computerOrHuman.length; i++) {
+            if (computerOrHuman[i] == 1 || boardWithSnake.snakes[i].dead) {
+                res.push(null);
+            }
+            else {
+                var board = boardWithSnake.board;
+                var snake = boardWithSnake.snakes[i];
+                var head = boardWithSnake.snakes[i].headToTail[0];
+                var tempDirection = { shiftX: 1, shiftY: 0 };
+                var count = 0;
+                var possibleMoves = [];
+                possibleMoves.push({ shiftX: 1, shiftY: 0 }, { shiftX: -1, shiftY: 0 }, { shiftX: 0, shiftY: 1 }, { shiftX: 0, shiftY: -1 });
+                for (var j = 0; j < possibleMoves.length; j++) {
+                    var move = possibleMoves[j];
+                    if (!isValid(move, board, snake)) {
+                        continue;
+                    }
+                    if (hasFoodThisWay(head, move, board)) {
+                        tempDirection = move;
+                        console.log('find food');
+                        break;
+                    }
+                    tempDirection = move;
                 }
-                catch (e) {
-                }
+                console.log(tempDirection);
+                res.push(tempDirection);
             }
         }
-        return possibleMoves;
+        return res;
     }
-    aiService.getPossibleMoves = getPossibleMoves;
-    /**
-     * Returns the move that the computer player should do for the given state.
-     * alphaBetaLimits is an object that sets a limit on the alpha-beta search,
-     * and it has either a millisecondsLimit or maxDepth field:
-     * millisecondsLimit is a time limit, and maxDepth is a depth limit.
-     */
-    function createComputerMove(move, alphaBetaLimits) {
-        // We use alpha-beta search, where the search states are TicTacToe moves.
-        return alphaBetaService.alphaBetaDecision(move, move.turnIndexAfterMove, getNextStates, getStateScoreForIndex0, null, alphaBetaLimits);
-    }
-    aiService.createComputerMove = createComputerMove;
-    function getStateScoreForIndex0(move, playerIndex) {
-        var endMatchScores = move.endMatchScores;
-        if (endMatchScores) {
-            return endMatchScores[0] > endMatchScores[1] ? Number.POSITIVE_INFINITY
-                : endMatchScores[0] < endMatchScores[1] ? Number.NEGATIVE_INFINITY
-                    : 0;
+    aiService.findComputerMove = findComputerMove;
+    function hasFoodThisWay(head, direction, board) {
+        if (gameLogic.isBarrierOrBorderOrOpponentOrMySelf(head.row + direction.shiftX, head.col + direction.shiftY, board)) {
+            return false;
         }
-        return 0;
+        if (board[head.row + direction.shiftX][head.col + direction.shiftY] === 'FOOD') {
+            return true;
+        }
+        if (gameLogic.isBarrierOrBorderOrOpponentOrMySelf(head.row + 2 * direction.shiftX, head.col + 2 * direction.shiftY, board)) {
+            return false;
+        }
+        if (board[head.row + 2 * direction.shiftX][head.col + 2 * direction.shiftY] === 'FOOD') {
+            return true;
+        }
+        if (gameLogic.isBarrierOrBorderOrOpponentOrMySelf(head.row + 3 * direction.shiftX, head.col + 3 * direction.shiftY, board)) {
+            return false;
+        }
+        if (board[head.row + 3 * direction.shiftX][head.col + 3 * direction.shiftY] === 'FOOD') {
+            return true;
+        }
     }
-    function getNextStates(move, playerIndex) {
-        return getPossibleMoves(move.stateAfterMove, playerIndex);
+    function isValid(newDirection, board, snake) {
+        var head = snake.headToTail[0];
+        var oldDirection = snake.currentDirection;
+        return !gameLogic.isBarrierOrBorderOrOpponentOrMySelf(head.row + newDirection.shiftX, head.col + newDirection.shiftY, board)
+            && !(oldDirection.shiftX + newDirection.shiftX == 0 &&
+                oldDirection.shiftY + newDirection.shiftY == 0);
     }
 })(aiService || (aiService = {}));
 //# sourceMappingURL=aiService.js.map

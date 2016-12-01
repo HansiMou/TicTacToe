@@ -23,61 +23,44 @@
 </head>
 <body ng-cloak ng-keydown="game.keyDown($event.keyCode)">
 <!--instruction and adapter-->
-<div style="margin-top: 10%;margin-left: 3%">
+<div style="margin-top: 10%; margin-left: 3%; line-height: 0;">
   <h4>Instructions</h4>
-  <ul>
-    <li><h5>Press 'Enter' to start or stop the game</h5></li>
-  </ul>
-
+  <p>Press 'Enter' to start or stop the game</p><br>
   <h4 style="color:blue;">Player 1: &uarr; &darr; &larr; &rarr; </h4>
   <form>
     <label><input ng-model="game.ComputerOrHuman[0]" type="radio" value="1">human</label>
     <label><input ng-model="game.ComputerOrHuman[0]" type="radio" value="-1">computer</label>
-  </form>
-
   <h4 style="color:red;">Player 2: w, a, s, d</h4>
-  <form>
     <label><input ng-model="game.ComputerOrHuman[1]" type="radio" value="1">human</label>
-    <label><input ng-model="game.ComputerOrHuman[1]" type="radio" value="-1">computer</label>
-  </form>
-
+    <label><input ng-model="game.ComputerOrHuman[1]" type="radio" value="-1">computer</label><br>
+    <b style="line-height: 2.5;">Third computer player</b><label><input ng-model="game.ThirdComputerPlayer" ng-change="game.changePlayerNumber()" type="checkbox"></label>
   <h4>Game speed</h4>
-  <form>
-    <label><input ng-model="game.GameSpeed" type="radio" value="700">slow</label>
-    <label><input ng-model="game.GameSpeed" type="radio" value="500">normal</label>
-    <label><input ng-model="game.GameSpeed" type="radio" value="200">fast</label>
-    <label><input ng-model="game.GameSpeed" type="radio" value="70">hardcore</label>
-  </form>
+    <label><input ng-model="game.GameSpeed" ng-change="game.changeGameSpeed()" type="radio" value="700">slow</label>
+    <label><input ng-model="game.GameSpeed" ng-change="game.changeGameSpeed()" type="radio" value="500">normal</label>
+    <label><input ng-model="game.GameSpeed" ng-change="game.changeGameSpeed()" type="radio" value="200">fast</label>
+    <label><input ng-model="game.GameSpeed" ng-change="game.changeGameSpeed()" type="radio" value="70">hardcore</label>
   <h4>Food</h4>
-  <form>
     <label><input ng-model="game.NumberOfFood" ng-change="game.changeFoodNumber()" type="radio" value="5">few</label>
     <label><input ng-model="game.NumberOfFood" ng-change="game.changeFoodNumber()" type="radio" value="15">normal</label>
     <label><input ng-model="game.NumberOfFood" ng-change="game.changeFoodNumber()" type="radio" value="45">plenty</label>
     <label><input ng-model="game.NumberOfFood" ng-change="game.changeFoodNumber()" type="radio" value="100">harvest</label>
-  </form>
   <h4>Obstacle</h4>
-  <form>
     <label><input ng-model="game.NumberOfBarrier" ng-change="game.changeBarrierNumber()" type="radio" value="5">few</label>
     <label><input ng-model="game.NumberOfBarrier" ng-change="game.changeBarrierNumber()" type="radio" value="15">normal</label>
     <label><input ng-model="game.NumberOfBarrier" ng-change="game.changeBarrierNumber()" type="radio" value="45">plenty</label>
     <label><input ng-model="game.NumberOfBarrier" ng-change="game.changeBarrierNumber()" type="radio" value="100">crazy</label>
   </form>
 </div>
-<!--third player, scores and results-->
-<div style="margin-left: 77%; margin-top: -36%">
-  <form>
-    <label><input ng-model="game.ThirdComputerPlayer" ng-change="game.changePlayerNumber()" type="checkbox">Third computer player</label>
-  </form>
+<!--time, scores and results-->
+<div style="margin-left: 77%; margin-top: -32%; line-height: 0">
+  <h2 style="color:green;">Time left: {{game.RemainingTime/1000 >= 0 ? game.RemainingTime/1000 : 0}}</h2><br>
 </div>
-<div style="margin-left: 77%;">
-  <h2 style="color:green;">Time left: {{game.RemainingTime/1000 >= 0 ? game.RemainingTime/1000 : 0}}</h2>
-</div>
-<div style="margin-left: 77%;">
+<div style="margin-left: 77%; line-height: 0">
   <h3 style="color:blue;">score1: {{game.getSnakeLength(0)}}</h3>
   <h3 style="color:red;">score2: {{game.getSnakeLength(1)}}</h3>
   <h3 style="color:orange;" ng-if="game.ThirdComputerPlayer">score3: {{game.getSnakeLength(2)}}</h3>
 </div>
-<div style="margin-left: 77%; margin-top: 15%">
+<div style="margin-left: 77%; margin-top: 15%; line-height: 0">
   <h1 ng-if="game.isDraw()" style="color:black;">Draw</h1>
   <h1 ng-if="game.isFinished() && !game.isDraw()" style="color:{{game.getWinnerColor()}};">WIN!</h1>
 </div>

@@ -24,10 +24,8 @@ module game {
 
   export let currentUpdateUI: IUpdateUI = null;
   export let didMakeMove: boolean = false; // You can only make one move per updateUI
-  export let animationEndedTimeout: ng.IPromise<any> = null;
   export let state: IState = null;
   export let action: any = null;
-  export let computerAction: any = null;
   export let snakeOneMove: Direction = null;
   export let snakeTwoMove: Direction = null;
   export let snakeThreeMove: Direction = null;
@@ -177,6 +175,13 @@ module game {
     resetEverything();
   }
 
+  export function changeGameSpeed() {
+    if (action) {
+      $interval.cancel(action);
+      action = $interval(move, GameSpeed);
+    }
+  }
+
   export function isDraw(): boolean {
     if (currentUpdateUI.end == true) {
       return gameLogic.getWinner(currentUpdateUI.move.stateAfterMove.boardWithSnakes) === '';
@@ -207,13 +212,6 @@ module game {
   }
 
   export function shouldSlowlyDisappear(row: number, col: number): boolean {
-    // if (!isFirstMove() && currentUpdateUI.stateBeforeMove && currentUpdateUI.move) {
-    //   if (currentUpdateUI.stateBeforeMove.boardWithSnakes.board[row][col] !== '' &&
-    //       currentUpdateUI.move.stateAfterMove.boardWithSnakes.board[row][col] === '') {
-    //     log.error("true");
-    //     return true;
-    //   }
-    // }
     return false;
   }
 

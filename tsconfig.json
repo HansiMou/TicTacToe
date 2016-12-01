@@ -38,7 +38,8 @@
         "typings/angularjs/angular.d.ts",
         "typings/jasmine/jasmine.d.ts",
         "typings/jquery/jquery.d.ts",
-        "typings/multiplayer-games.d.ts"
+        "typings/multiplayer-games.d.ts",
+        "typings/selenium-webdriver/selenium-webdriver.d.ts"
     ],
     "exclude": [
         "node_modules"

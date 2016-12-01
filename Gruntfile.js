@@ -233,7 +233,6 @@ module.exports = function(grunt) {
   // Default task(s).
   grunt.registerTask('default', [
       'ts',
-      'karma',
       'copy',
       'concat', 'postcss', 'uglify',
       'processhtml', 'manifest',

@@ -14,10 +14,8 @@ var game;
     game.ThirdComputerPlayer = false;
     game.currentUpdateUI = null;
     game.didMakeMove = false; // You can only make one move per updateUI
-    game.animationEndedTimeout = null;
     game.state = null;
     game.action = null;
-    game.computerAction = null;
     game.snakeOneMove = null;
     game.snakeTwoMove = null;
     game.snakeThreeMove = null;
@@ -164,6 +162,13 @@ var game;
         resetEverything();
     }
     game.changePlayerNumber = changePlayerNumber;
+    function changeGameSpeed() {
+        if (game.action) {
+            $interval.cancel(game.action);
+            game.action = $interval(move, game.GameSpeed);
+        }
+    }
+    game.changeGameSpeed = changeGameSpeed;
     function isDraw() {
         if (game.currentUpdateUI.end == true) {
             return gameLogic.getWinner(game.currentUpdateUI.move.stateAfterMove.boardWithSnakes) === '';
@@ -196,13 +201,6 @@ var game;
     }
     game.shouldSlowlyAppear = shouldSlowlyAppear;
     function shouldSlowlyDisappear(row, col) {
-        // if (!isFirstMove() && currentUpdateUI.stateBeforeMove && currentUpdateUI.move) {
-        //   if (currentUpdateUI.stateBeforeMove.boardWithSnakes.board[row][col] !== '' &&
-        //       currentUpdateUI.move.stateAfterMove.boardWithSnakes.board[row][col] === '') {
-        //     log.error("true");
-        //     return true;
-        //   }
-        // }
         return false;
     }
     game.shouldSlowlyDisappear = shouldSlowlyDisappear;
