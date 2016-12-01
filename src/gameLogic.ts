@@ -237,7 +237,7 @@ module gameLogic {
         // bump into border
         if (head.row < 0 || head.row >= ROWS || head.col < 0 || head.col >= COLS) {
           snake.dead = true;
-          snake.loseInfo = 'bump into borders.';
+          snake.loseInfo = 'bump into wall.';
           log.log("dead because bump into border");
           continue;
         }
