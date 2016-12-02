@@ -11,9 +11,10 @@ var aiService;
                 var board = boardWithSnake.board;
                 var snake = boardWithSnake.snakes[i];
                 var head = boardWithSnake.snakes[i].headToTail[0];
-                var tempDirection = { shiftX: 1, shiftY: 0 };
+                var foodDirection = null;
                 var count = 0;
                 var possibleMoves = [];
+                var validMoves = [];
                 possibleMoves.push({ shiftX: 1, shiftY: 0 }, { shiftX: -1, shiftY: 0 }, { shiftX: 0, shiftY: 1 }, { shiftX: 0, shiftY: -1 });
                 for (var j = 0; j < possibleMoves.length; j++) {
                     var move = possibleMoves[j];
@@ -21,14 +22,24 @@ var aiService;
                         continue;
                     }
                     if (hasFoodThisWay(head, move, board)) {
-                        tempDirection = move;
+                        foodDirection = move;
                         console.log('find food');
                         break;
                     }
-                    tempDirection = move;
+                    validMoves.push(move);
                 }
-                console.log(tempDirection);
-                res.push(tempDirection);
+                if (foodDirection) {
+                    res.push(foodDirection);
+                }
+                else {
+                    console.log(validMoves);
+                    if (validMoves.length == 0) {
+                        res.push(null);
+                    }
+                    else {
+                        res.push(validMoves[0]);
+                    }
+                }
             }
         }
         return res;
@@ -60,6 +71,22 @@ var aiService;
         return !gameLogic.isBarrierOrBorderOrOpponentOrMySelf(head.row + newDirection.shiftX, head.col + newDirection.shiftY, board)
             && !(oldDirection.shiftX + newDirection.shiftX == 0 &&
                 oldDirection.shiftY + newDirection.shiftY == 0);
+    }
+    function score(board, cell) {
+        if (gameLogic.isBarrierOrBorderOrOpponentOrMySelf(cell.row, cell.col, board)) {
+            return 0;
+        }
+        if (board[cell.row][cell.col] === 'FOOD') {
+            return 100;
+        }
+        var score = 0;
+        for (var i = 0; i < board.length; i++) {
+            for (var j = 0; j < board.length; j++) {
+                if (i == cell.row && j == cell.col) {
+                    continue;
+                }
+            }
+        }
     }
 })(aiService || (aiService = {}));
 //# sourceMappingURL=aiService.js.map
