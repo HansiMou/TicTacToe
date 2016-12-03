@@ -14,7 +14,7 @@ module game {
   // I export all variables to make it easy to debug in the browser by
   // simply typing in the console, e.g.,
   // game.currentUpdateUI
-  export const ALLTIME = 120*1000;
+  export const ALLTIME = 10*1000;
   export const GameSpeed = 500;
   export const BoardSize = gameLogic.ROWS;
   export const ComputerOrHuman = [1, -1];

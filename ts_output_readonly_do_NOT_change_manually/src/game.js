@@ -5,7 +5,7 @@ var game;
     // I export all variables to make it easy to debug in the browser by
     // simply typing in the console, e.g.,
     // game.currentUpdateUI
-    game.ALLTIME = 120 * 1000;
+    game.ALLTIME = 10 * 1000;
     game.GameSpeed = 500;
     game.BoardSize = gameLogic.ROWS;
     game.ComputerOrHuman = [1, -1];
