@@ -157,20 +157,39 @@ module gameLogic {
   }
 
   // return the only one player that has live snake, '', '1', '2'
-  export function getWinner(boardWithSnakes: BoardWithSnakes): string {
-    let winner: string = '';
-    let countOfLiveSnake: number = 0;
+  export function getWinner(boardWithSnakes: BoardWithSnakes, time: number): string {
+    if (time > 0) {
+      let winner: string = '';
+      let countOfLiveSnake: number = 0;
 
-    for (let i = 0; i < boardWithSnakes.snakes.length; i++) {
-      if (!boardWithSnakes.snakes[i].dead) {
-        countOfLiveSnake++;
-        winner = i+1+'';
+      for (let i = 0; i < boardWithSnakes.snakes.length; i++) {
+        if (!boardWithSnakes.snakes[i].dead) {
+          countOfLiveSnake++;
+          winner = i + 1 + '';
+        }
       }
+      if (countOfLiveSnake != 1) {
+        winner = '';
+      }
+      return winner;
+    } else {
+      let maxLen = 0;
+      let winner = '';
+      let draw = false;
+
+      for (let i = 0; i < boardWithSnakes.snakes.length; i++) {
+        if (!boardWithSnakes.snakes[i].dead) {
+          if (boardWithSnakes.snakes[i].headToTail.length > maxLen) {
+            maxLen = boardWithSnakes.snakes[i].headToTail.length;
+            winner = i + 1 + '';
+            draw = false;
+          } else if (boardWithSnakes.snakes[i].headToTail.length == maxLen) {
+            draw = true;
+          }
+        }
+      }
+      return draw? '' : winner;
     }
-    if (countOfLiveSnake != 1) {
-      winner = '';
-    }
-    return winner;
   }
 
   /**
@@ -184,7 +203,7 @@ module gameLogic {
       stateBeforeMove = getInitialState();
     }
     let boardWithSnakes:BoardWithSnakes = stateBeforeMove.boardWithSnakes;
-    if (getWinner(boardWithSnakes) !== '' || isTie(boardWithSnakes, leftTime)) {
+    if (getWinner(boardWithSnakes, leftTime) !== '' || isTie(boardWithSnakes, leftTime)) {
       throw new Error("Can only make a move if the game is not over!");
     }
     let boardWithSnakesAfterMove = {board: angular.copy(boardWithSnakes.board), snakes: angular.copy(boardWithSnakes.snakes)};
@@ -274,7 +293,7 @@ module gameLogic {
       updateBoardWithSnakes(boardWithSnakesAfterMove);
     }
 
-    let winner = getWinner(boardWithSnakesAfterMove);
+    let winner = getWinner(boardWithSnakesAfterMove, leftTime);
     let matchScores: number[] = [];
     if (winner !== '' || isTie(boardWithSnakesAfterMove, leftTime)) {
       for (let snake of boardWithSnakesAfterMove.snakes) {
