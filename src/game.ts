@@ -86,10 +86,36 @@ module game {
       $interval.cancel(action);
       currentUpdateUI.end = true;
       log.error(e);
+      try {
+        sendResult();
+      } catch (e) {
+        log.info("send fail");
+      }
       return;
     }
     // Move is legal, make it!
     makeMove(nextMove);
+  }
+
+  function sendResult(): void {
+    let snake: Snake[] = state.boardWithSnakes.snakes;
+    for (let i=0;i<ComputerOrHuman.length;i++) {
+      // if is human
+      if (ComputerOrHuman[i] == 1) {
+        let score = snake[i].headToTail.length;
+        let url  = "../dbman/saveScore.php?"+"gamename=multiplayer-snake&playername=player"+i+"&score="+score;
+        httpGetAsync(url, function(){});
+      }
+    }
+  }
+  function httpGetAsync(theUrl: any, callback:any) {
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() {
+      if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+        callback(xmlHttp.responseText);
+    }
+    xmlHttp.open("GET", theUrl, true); // true for asynchronous
+    xmlHttp.send(null);
   }
 
   function computerMove(): void {
