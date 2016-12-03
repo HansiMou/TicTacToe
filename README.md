@@ -120,6 +120,6 @@ This will run TypeScript-Compiler (tsc) and watch for changes in your ts files.
 
 Open index.html , make a move and see in the console your new text.
 
-
+At last, run `grunt` to uglify all the files to make it smaller, then use the dist/index.min.html.
 
 
