@@ -185,7 +185,7 @@ module game {
 
   export function isDraw(): boolean {
     if (currentUpdateUI.end == true) {
-      return gameLogic.getWinner(currentUpdateUI.move.stateAfterMove.boardWithSnakes) === '';
+      return gameLogic.getWinner(currentUpdateUI.move.stateAfterMove.boardWithSnakes, RemainingTime) === '';
     }
     return false;
   }
@@ -195,7 +195,7 @@ module game {
   }
 
   export function getWinnerColor(): string {
-    let winner = gameLogic.getWinner(currentUpdateUI.move.stateAfterMove.boardWithSnakes);
+    let winner = gameLogic.getWinner(currentUpdateUI.move.stateAfterMove.boardWithSnakes, RemainingTime);
     if (winner === '1') {
       return 'blue';
     } else if (winner === '2') {
