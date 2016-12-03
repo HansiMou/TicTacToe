@@ -42,7 +42,7 @@
     <?php include "../footer.php"; ?>
 </div>
 <script type="text/javascript">
-    newWindowBtn(2000,800,"multiplayer-snake/iframe.html",[]);
+    newWindowBtn(2000,2000,"multiplayer-snake/dist/index.min.html",[]);
 </script>
 </body>
 </html>
