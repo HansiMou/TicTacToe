@@ -172,7 +172,7 @@ var game;
     game.changeGameSpeed = changeGameSpeed;
     function isDraw() {
         if (game.currentUpdateUI.end == true) {
-            return gameLogic.getWinner(game.currentUpdateUI.move.stateAfterMove.boardWithSnakes) === '';
+            return gameLogic.getWinner(game.currentUpdateUI.move.stateAfterMove.boardWithSnakes, game.RemainingTime) === '';
         }
         return false;
     }
@@ -182,7 +182,7 @@ var game;
     }
     game.isFinished = isFinished;
     function getWinnerColor() {
-        var winner = gameLogic.getWinner(game.currentUpdateUI.move.stateAfterMove.boardWithSnakes);
+        var winner = gameLogic.getWinner(game.currentUpdateUI.move.stateAfterMove.boardWithSnakes, game.RemainingTime);
         if (winner === '1') {
             return 'blue';
         }

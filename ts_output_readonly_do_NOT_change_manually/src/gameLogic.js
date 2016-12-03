@@ -124,19 +124,39 @@ var gameLogic;
         return false;
     }
     // return the only one player that has live snake, '', '1', '2'
-    function getWinner(boardWithSnakes) {
-        var winner = '';
-        var countOfLiveSnake = 0;
-        for (var i = 0; i < boardWithSnakes.snakes.length; i++) {
-            if (!boardWithSnakes.snakes[i].dead) {
-                countOfLiveSnake++;
-                winner = i + 1 + '';
+    function getWinner(boardWithSnakes, time) {
+        if (time > 0) {
+            var winner = '';
+            var countOfLiveSnake = 0;
+            for (var i = 0; i < boardWithSnakes.snakes.length; i++) {
+                if (!boardWithSnakes.snakes[i].dead) {
+                    countOfLiveSnake++;
+                    winner = i + 1 + '';
+                }
             }
+            if (countOfLiveSnake != 1) {
+                winner = '';
+            }
+            return winner;
         }
-        if (countOfLiveSnake != 1) {
-            winner = '';
+        else {
+            var maxLen = 0;
+            var winner = '';
+            var draw = false;
+            for (var i = 0; i < boardWithSnakes.snakes.length; i++) {
+                if (!boardWithSnakes.snakes[i].dead) {
+                    if (boardWithSnakes.snakes[i].headToTail.length > maxLen) {
+                        maxLen = boardWithSnakes.snakes[i].headToTail.length;
+                        winner = i + 1 + '';
+                        draw = false;
+                    }
+                    else if (boardWithSnakes.snakes[i].headToTail.length == maxLen) {
+                        draw = true;
+                    }
+                }
+            }
+            return draw ? '' : winner;
         }
-        return winner;
     }
     gameLogic.getWinner = getWinner;
     /**
@@ -149,7 +169,7 @@ var gameLogic;
             stateBeforeMove = getInitialState();
         }
         var boardWithSnakes = stateBeforeMove.boardWithSnakes;
-        if (getWinner(boardWithSnakes) !== '' || isTie(boardWithSnakes, leftTime)) {
+        if (getWinner(boardWithSnakes, leftTime) !== '' || isTie(boardWithSnakes, leftTime)) {
             throw new Error("Can only make a move if the game is not over!");
         }
         var boardWithSnakesAfterMove = { board: angular.copy(boardWithSnakes.board), snakes: angular.copy(boardWithSnakes.snakes) };
@@ -234,7 +254,7 @@ var gameLogic;
             }
             updateBoardWithSnakes(boardWithSnakesAfterMove);
         }
-        var winner = getWinner(boardWithSnakesAfterMove);
+        var winner = getWinner(boardWithSnakesAfterMove, leftTime);
         var matchScores = [];
         if (winner !== '' || isTie(boardWithSnakesAfterMove, leftTime)) {
             for (var _i = 0, _a = boardWithSnakesAfterMove.snakes; _i < _a.length; _i++) {
